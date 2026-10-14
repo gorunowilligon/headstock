@@ -6,18 +6,19 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { ReportDialog } from '@/components/detail/report-dialog'
 import { Spec } from '@/components/detail/spec'
-import { products } from '@/lib/products'
+import { exibirEspecificacoesTecnicas } from '@/lib/config'
+import { lerPreco } from '@/lib/price'
+import { vendedorAtual, type Product } from '@/lib/products'
 
-export function Detail({ onBack }: { onBack: () => void }) {
+export function Detail({ produto, onBack }: { produto: Product, onBack: () => void }) {
   const [photo, setPhoto] = useState(0)
+  const vendedor = produto.vendedor ?? vendedorAtual
+  const iniciaisVendedor = vendedor.nome.split(' ').map((parte) => parte[0]).slice(0, 2).join('')
   const [isReportOpen, setIsReportOpen] = useState(false)
   const [motivo, setMotivo] = useState('')
   const [reportSent, setReportSent] = useState(false)
-  const photos = [
-    products[0].image,
-    'https://images.unsplash.com/photo-1526924143875-1e1d8d4f9f8f?auto=format&fit=crop&w=1000&q=85',
-    'https://images.unsplash.com/photo-1556449895-a33c9dba33dd?auto=format&fit=crop&w=1000&q=85',
-  ]
+  const photos = produto.fotos?.length ? produto.fotos : [produto.image]
+  const parcela = lerPreco(produto.price) / 10
 
   useEffect(() => {
     if (!reportSent) return
@@ -38,39 +39,47 @@ export function Detail({ onBack }: { onBack: () => void }) {
       <div className="grid gap-10 lg:grid-cols-[1.4fr_0.8fr]">
         <section>
           <div className="overflow-hidden rounded-2xl bg-gray-100">
-            <img src={photos[photo]} alt="Fender Stratocaster Player Plus" className="aspect-[4/3] w-full object-cover" />
+            <img src={photos[photo]} alt={produto.title} className="aspect-[4/3] w-full object-cover" />
           </div>
-          <div className="mt-3 grid grid-cols-3 gap-3">
-            {photos.map((src, i) => (
-              <button key={src} onClick={() => setPhoto(i)} className={`overflow-hidden rounded-xl border-2 ${photo === i ? 'border-red-600' : 'border-transparent'}`}>
-                <img src={src} alt={`Foto ${i + 1}`} className="aspect-[4/3] w-full object-cover" />
-              </button>
-            ))}
-          </div>
-          <div className="mt-10">
-            <h2 className="mb-4 text-xl font-bold">Especificações técnicas</h2>
-            <div className="grid grid-cols-2 gap-px overflow-hidden rounded-xl border bg-gray-200 text-sm">
-              <Spec name="Marca / modelo" value="Fender Stratocaster Player Plus" />
-              <Spec name="Madeira do corpo" value="Alder" />
-              <Spec name="Braço" value="Maple / Pau Ferro" />
-              <Spec name="Captação" value="SSS · Single Coil" />
-              <Spec name="Número de cordas" value="6" />
-              <Spec name="Acabamento" value="3-Color Sunburst" />
+          {photos.length > 1 && (
+            <div className="mt-3 grid grid-cols-3 gap-3">
+              {photos.map((src, i) => (
+                <button key={i} onClick={() => setPhoto(i)} className={`overflow-hidden rounded-xl border-2 ${photo === i ? 'border-red-600' : 'border-transparent'}`}>
+                  <img src={src} alt={`Foto ${i + 1}`} className="aspect-[4/3] w-full object-cover" />
+                </button>
+              ))}
             </div>
-            <h2 className="mb-3 mt-10 text-xl font-bold">Sobre este anúncio</h2>
-            <p className="leading-7 text-gray-600">Guitarra impecável, regulada e pronta para tocar. Estou vendendo porque migrei para uma configuração diferente. Acompanha bag acolchoada e ponteira original. Sem marcas relevantes, trastes com mais de 80% de vida útil.</p>
-          </div>
+          )}
+          {exibirEspecificacoesTecnicas && (
+            <div className="mt-10">
+              <h2 className="mb-4 text-xl font-bold">Especificações técnicas</h2>
+              <div className="grid grid-cols-2 gap-px overflow-hidden rounded-xl border bg-gray-200 text-sm">
+                <Spec name="Marca / modelo" value="Fender Stratocaster Player Plus" />
+                <Spec name="Madeira do corpo" value="Alder" />
+                <Spec name="Braço" value="Maple / Pau Ferro" />
+                <Spec name="Captação" value="SSS · Single Coil" />
+                <Spec name="Número de cordas" value="6" />
+                <Spec name="Acabamento" value="3-Color Sunburst" />
+              </div>
+            </div>
+          )}
+          {produto.descricao && (
+            <div className="mt-10">
+              <h2 className="mb-3 text-xl font-bold">Sobre este anúncio</h2>
+              <p className="leading-7 text-gray-600">{produto.descricao}</p>
+            </div>
+          )}
         </section>
         <aside>
           <div className="sticky top-28 flex flex-col gap-5 rounded-2xl border bg-white p-6 shadow-sm">
             <Badge className="w-fit bg-red-50 text-red-700 hover:bg-red-50">Destaque</Badge>
             <div>
-              <h1 className="text-2xl font-extrabold leading-tight">Fender Stratocaster Player Plus</h1>
-              <p className="mt-2 text-sm text-gray-500">Usado · Excelente · São Paulo, SP</p>
+              <h1 className="text-2xl font-extrabold leading-tight">{produto.title}</h1>
+              <p className="mt-2 text-sm text-gray-500">{produto.condition} · {produto.location}</p>
             </div>
             <div className="border-y py-5">
-              <p className="text-3xl font-extrabold text-red-600">R$ 6.890</p>
-              <p className="mt-1 text-sm text-gray-500">ou 10x de R$ 689,00 sem juros</p>
+              <p className="text-3xl font-extrabold text-red-600">{produto.price}</p>
+              <p className="mt-1 text-sm text-gray-500">ou 10x de R$ {parcela.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} sem juros</p>
             </div>
             <div className="flex flex-col gap-3">
               <Button className="h-12 bg-red-600 text-base hover:bg-red-700">Comprar agora</Button>
@@ -82,10 +91,10 @@ export function Detail({ onBack }: { onBack: () => void }) {
               <p className="flex gap-2"><ShieldCheck className="mt-0.5 size-4 shrink-0 text-red-600" /> Você tem 48h após a entrega para contestar o estado do instrumento.</p>
             </div>
             <div className="flex items-center gap-3 border-t pt-4">
-              <div className="grid size-10 place-items-center rounded-full bg-red-100 font-bold text-red-600">MC</div>
+              <div className="grid size-10 place-items-center rounded-full bg-red-100 font-bold text-red-600">{iniciaisVendedor}</div>
               <div>
-                <p className="text-sm font-semibold">Marcos Cavalcanti</p>
-                <p className="flex items-center gap-1 text-xs text-gray-500"><Star className="size-3 fill-amber-400 text-amber-400" /> 4.9 · 23 vendas</p>
+                <p className="text-sm font-semibold">{vendedor.nome}</p>
+                <p className="flex items-center gap-1 text-xs text-gray-500"><Star className="size-3 fill-amber-400 text-amber-400" /> {vendedor.avaliacao.toFixed(1)} · {vendedor.vendas} vendas</p>
               </div>
             </div>
             <div>

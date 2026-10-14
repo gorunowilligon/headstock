@@ -5,7 +5,7 @@ import { Filters } from '@/components/home/filters'
 import { ProductCard } from '@/components/home/product-card'
 import type { Product } from '@/lib/products'
 
-export function Home({ catalogo, onOpen, favoritos, onToggleFavorite }: { catalogo: Product[], onOpen: () => void, favoritos: number[], onToggleFavorite: (id: number) => void }) {
+export function Home({ catalogo, onOpen, favoritos, onToggleFavorite }: { catalogo: Product[], onOpen: (id: number) => void, favoritos: number[], onToggleFavorite: (id: number) => void }) {
   return (
     <main className="mx-auto max-w-[1440px] px-5 py-8 lg:px-10">
       <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
@@ -32,7 +32,7 @@ export function Home({ catalogo, onOpen, favoritos, onToggleFavorite }: { catalo
               <ProductCard
                 key={product.id}
                 product={product}
-                onOpen={onOpen}
+                onOpen={() => onOpen(product.id)}
                 isFavorite={favoritos.includes(product.id)}
                 onToggleFavorite={() => onToggleFavorite(product.id)}
               />

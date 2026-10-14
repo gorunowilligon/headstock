@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button'
 import { ProductCard } from '@/components/home/product-card'
 import type { Product } from '@/lib/products'
 
-export function Favorites({ catalogo, onOpen, onBrowse, favoritos, onToggleFavorite }: { catalogo: Product[], onOpen: () => void, onBrowse: () => void, favoritos: number[], onToggleFavorite: (id: number) => void }) {
+export function Favorites({ catalogo, onOpen, onBrowse, favoritos, onToggleFavorite }: { catalogo: Product[], onOpen: (id: number) => void, onBrowse: () => void, favoritos: number[], onToggleFavorite: (id: number) => void }) {
   const favoriteProducts = catalogo.filter((product) => favoritos.includes(product.id))
 
   return (
@@ -28,7 +28,7 @@ export function Favorites({ catalogo, onOpen, onBrowse, favoritos, onToggleFavor
             <ProductCard
               key={product.id}
               product={product}
-              onOpen={onOpen}
+              onOpen={() => onOpen(product.id)}
               isFavorite
               onToggleFavorite={() => onToggleFavorite(product.id)}
             />
