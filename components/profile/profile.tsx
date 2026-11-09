@@ -6,8 +6,8 @@ import { Button } from '@/components/ui/button'
 import { ListingRow } from '@/components/profile/listing-row'
 import type { Anuncio } from '@/lib/models'
 
-export function Profile({ meusAnuncios, onTogglePause, onDeleteListing }: { meusAnuncios: Anuncio[], onTogglePause: (id: string) => void, onDeleteListing: (id: string) => void }) {
-  const [tab, setTab] = useState('dados')
+export function Profile({ meusAnuncios, abaInicial = 'dados', onEditListing, onTogglePause, onDeleteListing }: { meusAnuncios: Anuncio[], abaInicial?: string, onEditListing: (id: string) => void, onTogglePause: (id: string) => void, onDeleteListing: (id: string) => void }) {
+  const [tab, setTab] = useState(abaInicial)
   const fields = tab === 'dados'
     ? [['Nome completo', 'Marcos Cavalcanti'], ['E-mail', 'marcos@email.com'], ['Data de nascimento', '12/08/1992']]
     : tab === 'endereco'
@@ -34,6 +34,7 @@ export function Profile({ meusAnuncios, onTogglePause, onDeleteListing }: { meus
                 <ListingRow
                   key={anuncio.idAnuncio}
                   listing={anuncio}
+                  onEdit={() => onEditListing(anuncio.idAnuncio)}
                   onTogglePause={() => onTogglePause(anuncio.idAnuncio)}
                   onDelete={() => onDeleteListing(anuncio.idAnuncio)}
                 />

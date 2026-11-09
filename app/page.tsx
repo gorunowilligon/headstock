@@ -6,6 +6,7 @@ import { Footer } from '@/components/layout/footer'
 import { Home } from '@/components/home/home'
 import { Detail } from '@/components/detail/detail'
 import { Sell } from '@/components/sell/sell'
+import { EditListing } from '@/components/sell/edit-listing'
 import { Chat } from '@/components/chat/chat'
 import { Profile } from '@/components/profile/profile'
 import { Favorites } from '@/components/favorites/favorites'
@@ -16,7 +17,8 @@ import type { Anuncio, Denuncia } from '@/lib/models'
 export default function Page() {
   const [currentView, setCurrentView] = useState('home')
   const [previousView, setPreviousView] = useState('home')
-  const [anuncioSelecionadoId, setAnuncioSelecionadoId] = useState<string | null>(null)
+  const [voltarParaAnuncios, setVoltarParaAnuncios] = useState(false)
+  const [anuncioSelecionadoId,setAnuncioSelecionadoId] = useState<string | null>(null)
   const [catalogo, setCatalogo] = usePersistentState<Anuncio[]>('headstock:v2:catalogo', anuncios)
   const [favoritos, setFavoritos] = usePersistentState<string[]>('headstock:v2:favoritos', [])
   const [, setDenuncias] = usePersistentState<Denuncia[]>('headstock:v2:denuncias', [])
@@ -40,6 +42,17 @@ export default function Page() {
     setCurrentView('home')
   }
 
+  const updateListing = (atualizado: Anuncio) => {
+    setCatalogo((prev) => prev.map((anuncio) => anuncio.idAnuncio === atualizado.idAnuncio ? atualizado : anuncio))
+    setVoltarParaAnuncios(true)
+    setCurrentView('profile')
+  }
+
+  const editListing = (id: string) => {
+    setAnuncioSelecionadoId(id)
+    setCurrentView('edit')
+  }
+
   const deleteListing = (id: string) => {
     setCatalogo((prev) => prev.filter((anuncio) => anuncio.idAnuncio !== id))
     setFavoritos((prev) => prev.filter((favId) => favId !== id))
@@ -58,15 +71,16 @@ export default function Page() {
   const renderView = () => {
     if (currentView === 'detail' && anuncioSelecionado) return <Detail key={anuncioSelecionado.idAnuncio} anuncio={anuncioSelecionado} onBack={() => setCurrentView(previousView)} onReport={submitReport} />
     if (currentView === 'sell') return <Sell onPublish={publishListing} />
+    if (currentView === 'edit' && anuncioSelecionado) return <EditListing key={anuncioSelecionado.idAnuncio} anuncio={anuncioSelecionado} onSave={updateListing} onCancel={() => { setVoltarParaAnuncios(true); setCurrentView('profile') }} />
     if (currentView === 'chat') return <Chat />
-    if (currentView === 'profile') return <Profile meusAnuncios={meusAnuncios} onTogglePause={togglePause} onDeleteListing={deleteListing} />
+    if (currentView === 'profile') return <Profile key={voltarParaAnuncios ? 'anuncios' : 'dados'} abaInicial={voltarParaAnuncios ? 'anuncios' : 'dados'} meusAnuncios={meusAnuncios}onEditListing={editListing} onTogglePause={togglePause} onDeleteListing={deleteListing} />
     if (currentView === 'favorites') return <Favorites catalogo={catalogoAtivo} onOpen={openDetail} onBrowse={() => setCurrentView('home')} favoritos={favoritos} onToggleFavorite={toggleFavorite} />
     return <Home catalogo={catalogoAtivo} onOpen={openDetail} favoritos={favoritos} onToggleFavorite={toggleFavorite} />
   }
 
   return (
     <div className="min-h-screen bg-white text-gray-950">
-      <Header onNavigate={setCurrentView} />
+      <Header onNavigate={(view) => { setVoltarParaAnuncios(false); setCurrentView(view) }} />
       {renderView()}
       <Footer />
     </div>

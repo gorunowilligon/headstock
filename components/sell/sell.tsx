@@ -1,14 +1,14 @@
 'use client'
 
 import { useState, type FormEvent } from 'react'
-import { Upload } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { CategoryFields } from '@/components/sell/category-fields'
 import { GlobalSpecFields } from '@/components/sell/global-spec-fields'
+import { PhotoUploader } from '@/components/sell/photo-uploader'
 import { categorias, type Categoria } from '@/lib/categories'
 import { catalogoMestre, usuarioLogado } from '@/lib/mock-data'
-import type { Anuncio, Instrumento } from '@/lib/models'
-import { redimensionarImagem } from '@/lib/resize-image'
+import type { Anuncio, FotoAnuncio, Instrumento } from '@/lib/models'
+import { MIN_FOTOS, mensagemFotosInsuficientes } from '@/lib/photos'
 
 const localizacaoDoUsuario = 'São Paulo, SP'
 
@@ -16,19 +16,22 @@ export function Sell({ onPublish }: { onPublish: (anuncio: Anuncio) => void }) {
   const [price, setPrice] = useState('')
   const [preencherManual, setPreencherManual] = useState(false)
   const [categoriaSelecionada, setCategoriaSelecionada] = useState<Categoria | ''>('')
-  const [fotos, setFotos] = useState<string[]>([])
+  const [fotos, setFotos] = useState<FotoAnuncio[]>([])
+  const [erroFotos, setErroFotos] = useState('')
   const value = Number(price) || 0
 
-  const adicionarFotos = async (files: FileList | null) => {
-    if (!files) return
-    const imagens = Array.from(files).filter((file) => file.type.startsWith('image/'))
-    const resultados = await Promise.allSettled(imagens.map((file) => redimensionarImagem(file)))
-    const novasFotos = resultados.flatMap((resultado) => resultado.status === 'fulfilled' ? [resultado.value] : [])
-    setFotos((prev) => [...prev, ...novasFotos])
+  const atualizarFotos = (novas: FotoAnuncio[]) => {
+    setFotos(novas)
+    if (novas.length >= MIN_FOTOS) setErroFotos('')
   }
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
+    if (fotos.length < MIN_FOTOS) {
+      setErroFotos(mensagemFotosInsuficientes(fotos.length))
+      document.getElementById('secao-fotos')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      return
+    }
     const data = new FormData(e.currentTarget)
     const campo = (nome: string) => String(data.get(nome) ?? '').trim()
 
@@ -54,7 +57,7 @@ export function Sell({ onPublish }: { onPublish: (anuncio: Anuncio) => void }) {
       dataCriacao: new Date().toISOString(),
       idVendedor: usuarioLogado.idUsuario,
       instrumento,
-      fotos: fotos.map((url) => ({ idFoto: crypto.randomUUID(), url, tamanhoMB: 0 })),
+      fotos,
       localizacao: localizacaoDoUsuario,
     })
   }
@@ -69,31 +72,9 @@ export function Sell({ onPublish }: { onPublish: (anuncio: Anuncio) => void }) {
         </div>
         <form onSubmit={handleSubmit} className="grid gap-6 lg:grid-cols-[1fr_320px]">
           <div className="flex flex-col gap-6">
-            <section className="rounded-2xl border bg-white p-6">
+            <section id="secao-fotos" className="rounded-2xl border bg-white p-6">
               <h2 className="mb-1 text-lg font-bold">1. Fotos do instrumento</h2>
-              <p className="mb-5 text-sm text-gray-500">Envie no mínimo 3 fotos do item. Limite de 5 MB por imagem (serão redimensionadas no servidor).</p>
-              <label
-                onDragOver={(e) => e.preventDefault()}
-                onDrop={(e) => { e.preventDefault(); adicionarFotos(e.dataTransfer.files) }}
-                className="grid min-h-52 cursor-pointer place-items-center rounded-xl border-2 border-dashed border-red-200 bg-red-50/40 p-6 text-center"
-              >
-                <input type="file" accept="image/*" multiple className="sr-only" onChange={(e) => { adicionarFotos(e.target.files); e.target.value = '' }} />
-                <div>
-                  <div className="mx-auto mb-3 grid size-12 place-items-center rounded-full bg-red-100 text-red-600"><Upload /></div>
-                  <p className="font-semibold">Arraste suas fotos aqui</p>
-                  <p className="mt-1 text-sm text-gray-500">ou <span className="font-semibold text-red-600">selecione os arquivos</span></p>
-                </div>
-              </label>
-              {fotos.length > 0 && (
-                <div className="mt-4 grid grid-cols-3 gap-3 sm:grid-cols-5">
-                  {fotos.map((foto, i) => (
-                    <div key={i} className="relative overflow-hidden rounded-lg border">
-                      <img src={foto} alt={`Foto ${i + 1}`} className="aspect-square w-full object-cover" />
-                      {i === 0 && <span className="absolute left-1.5 top-1.5 rounded bg-red-600 px-1.5 py-0.5 text-[10px] font-bold text-white">Capa</span>}
-                    </div>
-                  ))}
-                </div>
-              )}
+              <PhotoUploader fotos={fotos} onChange={atualizarFotos} erro={erroFotos} />
             </section>
             <section className="rounded-2xl border bg-white p-6">
               <h2 className="mb-5 text-lg font-bold">2. O que você está vendendo?</h2>
