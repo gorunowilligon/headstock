@@ -11,7 +11,7 @@ export function AcousticFields() {
       </SpecBlock>
       <SpecBlock title="Cordas e eletrônica">
         <SpecSelect label="Tipo de corda" options={['Nylon', 'Aço']} />
-        <SpecSelect label="Eletrônica / Captação" options={['Acústico puro', 'Eletroacústico']} />
+        <SpecSelect label="Eletrônica / Captação" name="tipoCaptacao" options={['Acústico puro', 'Eletroacústico']} />
       </SpecBlock>
     </>
   )

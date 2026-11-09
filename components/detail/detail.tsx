@@ -7,18 +7,20 @@ import { Button } from '@/components/ui/button'
 import { ReportDialog } from '@/components/detail/report-dialog'
 import { Spec } from '@/components/detail/spec'
 import { exibirEspecificacoesTecnicas } from '@/lib/config'
-import { lerPreco } from '@/lib/price'
-import { vendedorAtual, type Product } from '@/lib/products'
+import { buscarUsuario, usuarioLogado } from '@/lib/mock-data'
+import type { Anuncio, Denuncia } from '@/lib/models'
+import { formatarPreco } from '@/lib/price'
 
-export function Detail({ produto, onBack }: { produto: Product, onBack: () => void }) {
+export function Detail({ anuncio, onBack, onReport }: { anuncio: Anuncio, onBack: () => void, onReport: (denuncia: Denuncia) => void }) {
   const [photo, setPhoto] = useState(0)
-  const vendedor = produto.vendedor ?? vendedorAtual
+  const vendedor = buscarUsuario(anuncio.idVendedor) ?? usuarioLogado
   const iniciaisVendedor = vendedor.nome.split(' ').map((parte) => parte[0]).slice(0, 2).join('')
   const [isReportOpen, setIsReportOpen] = useState(false)
   const [motivo, setMotivo] = useState('')
+  const [descricaoTextual, setDescricaoTextual] = useState('')
   const [reportSent, setReportSent] = useState(false)
-  const photos = produto.fotos?.length ? produto.fotos : [produto.image]
-  const parcela = lerPreco(produto.price) / 10
+  const photos = anuncio.fotos.length ? anuncio.fotos.map((foto) => foto.url) : ['/placeholder.jpg']
+  const parcela = anuncio.preco / 10
 
   useEffect(() => {
     if (!reportSent) return
@@ -28,8 +30,17 @@ export function Detail({ produto, onBack }: { produto: Product, onBack: () => vo
 
   const handleReportSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
+    onReport({
+      idDenuncia: crypto.randomUUID(),
+      motivo,
+      descricaoTextual,
+      status: 'aberta',
+      idAutor: usuarioLogado.idUsuario,
+      idAnuncio: anuncio.idAnuncio,
+    })
     setIsReportOpen(false)
     setMotivo('')
+    setDescricaoTextual('')
     setReportSent(true)
   }
 
@@ -39,7 +50,7 @@ export function Detail({ produto, onBack }: { produto: Product, onBack: () => vo
       <div className="grid gap-10 lg:grid-cols-[1.4fr_0.8fr]">
         <section>
           <div className="overflow-hidden rounded-2xl bg-gray-100">
-            <img src={photos[photo]} alt={produto.title} className="aspect-[4/3] w-full object-cover" />
+            <img src={photos[photo]} alt={anuncio.titulo} className="aspect-[4/3] w-full object-cover" />
           </div>
           {photos.length > 1 && (
             <div className="mt-3 grid grid-cols-3 gap-3">
@@ -54,19 +65,18 @@ export function Detail({ produto, onBack }: { produto: Product, onBack: () => vo
             <div className="mt-10">
               <h2 className="mb-4 text-xl font-bold">Especificações técnicas</h2>
               <div className="grid grid-cols-2 gap-px overflow-hidden rounded-xl border bg-gray-200 text-sm">
-                <Spec name="Marca / modelo" value="Fender Stratocaster Player Plus" />
-                <Spec name="Madeira do corpo" value="Alder" />
-                <Spec name="Braço" value="Maple / Pau Ferro" />
-                <Spec name="Captação" value="SSS · Single Coil" />
-                <Spec name="Número de cordas" value="6" />
-                <Spec name="Acabamento" value="3-Color Sunburst" />
+                <Spec name="Marca / modelo" value={`${anuncio.instrumento.marca} ${anuncio.instrumento.modelo}`} />
+                <Spec name="Categoria" value={anuncio.instrumento.categoria} />
+                <Spec name="Captação" value={anuncio.instrumento.tipoCaptacao || '—'} />
+                <Spec name="Número de cordas" value={anuncio.instrumento.numeroCordas ? String(anuncio.instrumento.numeroCordas) : '—'} />
+                <Spec name="Orientação" value={anuncio.instrumento.orientacao || '—'} />
               </div>
             </div>
           )}
-          {produto.descricao && (
+          {anuncio.descricao && (
             <div className="mt-10">
               <h2 className="mb-3 text-xl font-bold">Sobre este anúncio</h2>
-              <p className="leading-7 text-gray-600">{produto.descricao}</p>
+              <p className="leading-7 text-gray-600">{anuncio.descricao}</p>
             </div>
           )}
         </section>
@@ -74,11 +84,11 @@ export function Detail({ produto, onBack }: { produto: Product, onBack: () => vo
           <div className="sticky top-28 flex flex-col gap-5 rounded-2xl border bg-white p-6 shadow-sm">
             <Badge className="w-fit bg-red-50 text-red-700 hover:bg-red-50">Destaque</Badge>
             <div>
-              <h1 className="text-2xl font-extrabold leading-tight">{produto.title}</h1>
-              <p className="mt-2 text-sm text-gray-500">{produto.condition} · {produto.location}</p>
+              <h1 className="text-2xl font-extrabold leading-tight">{anuncio.titulo}</h1>
+              <p className="mt-2 text-sm text-gray-500">{anuncio.condicao} · {anuncio.localizacao}</p>
             </div>
             <div className="border-y py-5">
-              <p className="text-3xl font-extrabold text-red-600">{produto.price}</p>
+              <p className="text-3xl font-extrabold text-red-600">{formatarPreco(anuncio.preco)}</p>
               <p className="mt-1 text-sm text-gray-500">ou 10x de R$ {parcela.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} sem juros</p>
             </div>
             <div className="flex flex-col gap-3">
@@ -94,7 +104,7 @@ export function Detail({ produto, onBack }: { produto: Product, onBack: () => vo
               <div className="grid size-10 place-items-center rounded-full bg-red-100 font-bold text-red-600">{iniciaisVendedor}</div>
               <div>
                 <p className="text-sm font-semibold">{vendedor.nome}</p>
-                <p className="flex items-center gap-1 text-xs text-gray-500"><Star className="size-3 fill-amber-400 text-amber-400" /> {vendedor.avaliacao.toFixed(1)} · {vendedor.vendas} vendas</p>
+                <p className="flex items-center gap-1 text-xs text-gray-500"><Star className="size-3 fill-amber-400 text-amber-400" /> {vendedor.reputacaoMedia.toFixed(1)}</p>
               </div>
             </div>
             <div>
@@ -104,7 +114,7 @@ export function Detail({ produto, onBack }: { produto: Product, onBack: () => vo
           </div>
         </aside>
       </div>
-      <ReportDialog open={isReportOpen} motivo={motivo} onMotivoChange={setMotivo} onClose={() => setIsReportOpen(false)} onSubmit={handleReportSubmit} />
+      <ReportDialog open={isReportOpen} motivo={motivo} onMotivoChange={setMotivo} descricaoTextual={descricaoTextual} onDescricaoTextualChange={setDescricaoTextual} onClose={() => setIsReportOpen(false)} onSubmit={handleReportSubmit} />
     </main>
   )
 }

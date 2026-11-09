@@ -2,7 +2,9 @@ import type { FormEvent } from 'react'
 import { Flag, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
-export function ReportDialog({ open, motivo, onMotivoChange, onClose, onSubmit }: { open: boolean, motivo: string, onMotivoChange: (value: string) => void, onClose: () => void, onSubmit: (e: FormEvent<HTMLFormElement>) => void }) {
+const motivos = ['Anúncio falso ou golpe', 'Produto proibido', 'Informações enganosas', 'Conteúdo ofensivo', 'Outro']
+
+export function ReportDialog({ open, motivo, onMotivoChange, descricaoTextual, onDescricaoTextualChange, onClose, onSubmit }: { open: boolean, motivo: string, onMotivoChange: (value: string) => void, descricaoTextual: string, onDescricaoTextualChange: (value: string) => void, onClose: () => void, onSubmit: (e: FormEvent<HTMLFormElement>) => void }) {
   if (!open) return null
 
   return (
@@ -21,11 +23,17 @@ export function ReportDialog({ open, motivo, onMotivoChange, onClose, onSubmit }
         </div>
         <label className="mt-5 block text-sm font-semibold">
           Motivo da denúncia
+          <select value={motivo} onChange={(e) => onMotivoChange(e.target.value)} required autoFocus className="mt-2 w-full rounded-lg border bg-white px-3 py-3 font-normal">
+            <option value="">Selecione</option>
+            {motivos.map((m) => <option key={m}>{m}</option>)}
+          </select>
+        </label>
+        <label className="mt-4 block text-sm font-semibold">
+          Descrição
           <textarea
-            value={motivo}
-            onChange={(e) => onMotivoChange(e.target.value)}
+            value={descricaoTextual}
+            onChange={(e) => onDescricaoTextualChange(e.target.value)}
             required
-            autoFocus
             rows={4}
             className="mt-2 w-full resize-none rounded-lg border px-3 py-3 font-normal outline-none focus:border-red-600"
             placeholder="Descreva o problema com este anúncio..."
@@ -33,7 +41,7 @@ export function ReportDialog({ open, motivo, onMotivoChange, onClose, onSubmit }
         </label>
         <div className="mt-6 flex justify-end gap-2">
           <Button type="button" variant="outline" onClick={onClose}>Cancelar</Button>
-          <Button type="submit" disabled={!motivo.trim()} className="bg-red-600 hover:bg-red-700">Enviar Denúncia</Button>
+          <Button type="submit" disabled={!motivo || !descricaoTextual.trim()} className="bg-red-600 hover:bg-red-700">Enviar Denúncia</Button>
         </div>
       </form>
     </div>

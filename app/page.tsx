@@ -10,53 +10,56 @@ import { Chat } from '@/components/chat/chat'
 import { Profile } from '@/components/profile/profile'
 import { Favorites } from '@/components/favorites/favorites'
 import { usePersistentState } from '@/hooks/use-persistent-state'
-import { meusAnunciosIdsMock, products, type Product } from '@/lib/products'
+import { anuncios, usuarioLogado } from '@/lib/mock-data'
+import type { Anuncio, Denuncia } from '@/lib/models'
 
 export default function Page() {
   const [currentView, setCurrentView] = useState('home')
   const [previousView, setPreviousView] = useState('home')
-  const [produtoSelecionadoId, setProdutoSelecionadoId] = useState<number | null>(null)
-  const [catalogo, setCatalogo] = usePersistentState('headstock:v1:catalogo', products)
-  const [meusAnunciosIds, setMeusAnunciosIds] = usePersistentState('headstock:v1:meus-anuncios', meusAnunciosIdsMock)
-  const [pausados, setPausados] = usePersistentState<number[]>('headstock:v1:pausados', [])
-  const [favoritos, setFavoritos] = usePersistentState<number[]>('headstock:v1:favoritos', [])
+  const [anuncioSelecionadoId, setAnuncioSelecionadoId] = useState<string | null>(null)
+  const [catalogo, setCatalogo] = usePersistentState<Anuncio[]>('headstock:v2:catalogo', anuncios)
+  const [favoritos, setFavoritos] = usePersistentState<string[]>('headstock:v2:favoritos', [])
+  const [, setDenuncias] = usePersistentState<Denuncia[]>('headstock:v2:denuncias', [])
 
-  const catalogoAtivo = catalogo.filter((product) => !pausados.includes(product.id))
-  const meusAnuncios = catalogo.filter((product) => meusAnunciosIds.includes(product.id))
-  const produtoSelecionado = catalogo.find((product) => product.id === produtoSelecionadoId)
+  const catalogoAtivo = catalogo.filter((anuncio) => anuncio.status === 'ativo')
+  const meusAnuncios = catalogo.filter((anuncio) => anuncio.idVendedor === usuarioLogado.idUsuario)
+  const anuncioSelecionado = catalogo.find((anuncio) => anuncio.idAnuncio === anuncioSelecionadoId)
 
-  const toggleFavorite = (id: number) => {
+  const toggleFavorite = (id: string) => {
     setFavoritos((prev) => prev.includes(id) ? prev.filter((favId) => favId !== id) : [...prev, id])
   }
 
-  const togglePause = (id: number) => {
-    setPausados((prev) => prev.includes(id) ? prev.filter((pausedId) => pausedId !== id) : [...prev, id])
+  const togglePause = (id: string) => {
+    setCatalogo((prev) => prev.map((anuncio) => anuncio.idAnuncio === id
+      ? { ...anuncio, status: anuncio.status === 'ativo' ? 'pausado' : 'ativo' }
+      : anuncio))
   }
 
-  const publishListing = (anuncio: Product) => {
+  const publishListing = (anuncio: Anuncio) => {
     setCatalogo((prev) => [anuncio, ...prev])
-    setMeusAnunciosIds((prev) => [...prev, anuncio.id])
     setCurrentView('home')
   }
 
-  const deleteListing = (id: number) => {
-    setCatalogo((prev) => prev.filter((product) => product.id !== id))
-    setMeusAnunciosIds((prev) => prev.filter((myId) => myId !== id))
-    setPausados((prev) => prev.filter((pausedId) => pausedId !== id))
+  const deleteListing = (id: string) => {
+    setCatalogo((prev) => prev.filter((anuncio) => anuncio.idAnuncio !== id))
     setFavoritos((prev) => prev.filter((favId) => favId !== id))
   }
 
-  const openDetail = (id: number) => {
-    setProdutoSelecionadoId(id)
+  const submitReport = (denuncia: Denuncia) => {
+    setDenuncias((prev) => [...prev, denuncia])
+  }
+
+  const openDetail = (id: string) => {
+    setAnuncioSelecionadoId(id)
     setPreviousView(currentView)
     setCurrentView('detail')
   }
 
   const renderView = () => {
-    if (currentView === 'detail' && produtoSelecionado) return <Detail key={produtoSelecionado.id} produto={produtoSelecionado} onBack={() => setCurrentView(previousView)} />
+    if (currentView === 'detail' && anuncioSelecionado) return <Detail key={anuncioSelecionado.idAnuncio} anuncio={anuncioSelecionado} onBack={() => setCurrentView(previousView)} onReport={submitReport} />
     if (currentView === 'sell') return <Sell onPublish={publishListing} />
     if (currentView === 'chat') return <Chat />
-    if (currentView === 'profile') return <Profile meusAnuncios={meusAnuncios} pausados={pausados} onTogglePause={togglePause} onDeleteListing={deleteListing} />
+    if (currentView === 'profile') return <Profile meusAnuncios={meusAnuncios} onTogglePause={togglePause} onDeleteListing={deleteListing} />
     if (currentView === 'favorites') return <Favorites catalogo={catalogoAtivo} onOpen={openDetail} onBrowse={() => setCurrentView('home')} favoritos={favoritos} onToggleFavorite={toggleFavorite} />
     return <Home catalogo={catalogoAtivo} onOpen={openDetail} favoritos={favoritos} onToggleFavorite={toggleFavorite} />
   }

@@ -4,9 +4,9 @@ import { useState } from 'react'
 import { Star } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ListingRow } from '@/components/profile/listing-row'
-import type { Product } from '@/lib/products'
+import type { Anuncio } from '@/lib/models'
 
-export function Profile({ meusAnuncios, pausados, onTogglePause, onDeleteListing }: { meusAnuncios: Product[], pausados: number[], onTogglePause: (id: number) => void, onDeleteListing: (id: number) => void }) {
+export function Profile({ meusAnuncios, onTogglePause, onDeleteListing }: { meusAnuncios: Anuncio[], onTogglePause: (id: string) => void, onDeleteListing: (id: string) => void }) {
   const [tab, setTab] = useState('dados')
   const fields = tab === 'dados'
     ? [['Nome completo', 'Marcos Cavalcanti'], ['E-mail', 'marcos@email.com'], ['Data de nascimento', '12/08/1992']]
@@ -32,11 +32,10 @@ export function Profile({ meusAnuncios, pausados, onTogglePause, onDeleteListing
             <div className="mt-6 flex flex-col gap-3">
               {meusAnuncios.map((anuncio) => (
                 <ListingRow
-                  key={anuncio.id}
+                  key={anuncio.idAnuncio}
                   listing={anuncio}
-                  isPaused={pausados.includes(anuncio.id)}
-                  onTogglePause={() => onTogglePause(anuncio.id)}
-                  onDelete={() => onDeleteListing(anuncio.id)}
+                  onTogglePause={() => onTogglePause(anuncio.idAnuncio)}
+                  onDelete={() => onDeleteListing(anuncio.idAnuncio)}
                 />
               ))}
               {meusAnuncios.length === 0 && <p className="rounded-xl border-2 border-dashed p-6 text-center text-sm text-gray-500">Você não tem anúncios publicados.</p>}

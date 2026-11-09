@@ -3,9 +3,9 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Filters } from '@/components/home/filters'
 import { ProductCard } from '@/components/home/product-card'
-import type { Product } from '@/lib/products'
+import type { Anuncio } from '@/lib/models'
 
-export function Home({ catalogo, onOpen, favoritos, onToggleFavorite }: { catalogo: Product[], onOpen: (id: number) => void, favoritos: number[], onToggleFavorite: (id: number) => void }) {
+export function Home({ catalogo, onOpen, favoritos, onToggleFavorite }: { catalogo: Anuncio[], onOpen: (id: string) => void, favoritos: string[], onToggleFavorite: (id: string) => void }) {
   return (
     <main className="mx-auto max-w-[1440px] px-5 py-8 lg:px-10">
       <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
@@ -30,11 +30,11 @@ export function Home({ catalogo, onOpen, favoritos, onToggleFavorite }: { catalo
           <div className="grid grid-cols-1 gap-x-5 gap-y-9 sm:grid-cols-2 xl:grid-cols-3">
             {catalogo.map((product) => (
               <ProductCard
-                key={product.id}
+                key={product.idAnuncio}
                 product={product}
-                onOpen={() => onOpen(product.id)}
-                isFavorite={favoritos.includes(product.id)}
-                onToggleFavorite={() => onToggleFavorite(product.id)}
+                onOpen={() => onOpen(product.idAnuncio)}
+                isFavorite={favoritos.includes(product.idAnuncio)}
+                onToggleFavorite={() => onToggleFavorite(product.idAnuncio)}
               />
             ))}
           </div>

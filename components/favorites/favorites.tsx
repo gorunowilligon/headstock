@@ -1,10 +1,10 @@
 import { Heart } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ProductCard } from '@/components/home/product-card'
-import type { Product } from '@/lib/products'
+import type { Anuncio } from '@/lib/models'
 
-export function Favorites({ catalogo, onOpen, onBrowse, favoritos, onToggleFavorite }: { catalogo: Product[], onOpen: (id: number) => void, onBrowse: () => void, favoritos: number[], onToggleFavorite: (id: number) => void }) {
-  const favoriteProducts = catalogo.filter((product) => favoritos.includes(product.id))
+export function Favorites({ catalogo, onOpen, onBrowse, favoritos, onToggleFavorite }: { catalogo: Anuncio[], onOpen: (id: string) => void, onBrowse: () => void, favoritos: string[], onToggleFavorite: (id: string) => void }) {
+  const favoriteProducts = catalogo.filter((product) => favoritos.includes(product.idAnuncio))
 
   return (
     <main className="mx-auto max-w-[1440px] px-5 py-8 lg:px-10">
@@ -26,11 +26,11 @@ export function Favorites({ catalogo, onOpen, onBrowse, favoritos, onToggleFavor
         <div className="grid grid-cols-1 gap-x-5 gap-y-9 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {favoriteProducts.map((product) => (
             <ProductCard
-              key={product.id}
+              key={product.idAnuncio}
               product={product}
-              onOpen={() => onOpen(product.id)}
+              onOpen={() => onOpen(product.idAnuncio)}
               isFavorite
-              onToggleFavorite={() => onToggleFavorite(product.id)}
+              onToggleFavorite={() => onToggleFavorite(product.idAnuncio)}
             />
           ))}
         </div>

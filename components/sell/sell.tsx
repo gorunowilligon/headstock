@@ -6,13 +6,13 @@ import { Button } from '@/components/ui/button'
 import { CategoryFields } from '@/components/sell/category-fields'
 import { GlobalSpecFields } from '@/components/sell/global-spec-fields'
 import { categorias, type Categoria } from '@/lib/categories'
-import { formatarPreco } from '@/lib/price'
-import { catalogoMestre, vendedorAtual, type Product } from '@/lib/products'
+import { catalogoMestre, usuarioLogado } from '@/lib/mock-data'
+import type { Anuncio, Instrumento } from '@/lib/models'
 import { redimensionarImagem } from '@/lib/resize-image'
 
 const localizacaoDoUsuario = 'São Paulo, SP'
 
-export function Sell({ onPublish }: { onPublish: (anuncio: Product) => void }) {
+export function Sell({ onPublish }: { onPublish: (anuncio: Anuncio) => void }) {
   const [price, setPrice] = useState('')
   const [preencherManual, setPreencherManual] = useState(false)
   const [categoriaSelecionada, setCategoriaSelecionada] = useState<Categoria | ''>('')
@@ -32,20 +32,30 @@ export function Sell({ onPublish }: { onPublish: (anuncio: Product) => void }) {
     const data = new FormData(e.currentTarget)
     const campo = (nome: string) => String(data.get(nome) ?? '').trim()
 
-    const item = preencherManual
-      ? { title: `${campo('marca')} ${campo('modelo')}`, brand: campo('marca'), type: categorias.find((categoria) => categoria.value === categoriaSelecionada)?.tipo ?? 'Outros' }
-      : catalogoMestre.find((instrumento) => instrumento.title === campo('catalogo'))
-    if (!item) return
+    const instrumento: Instrumento | undefined = preencherManual
+      ? {
+          idInstrumento: crypto.randomUUID(),
+          marca: campo('marca'),
+          modelo: campo('modelo'),
+          categoria: categorias.find((categoria) => categoria.value === categoriaSelecionada)?.tipo ?? 'Outros',
+          tipoCaptacao: campo('tipoCaptacao'),
+          numeroCordas: Number(campo('numeroCordas')) || 0,
+          orientacao: campo('orientacao'),
+        }
+      : catalogoMestre.find((i) => i.idInstrumento === campo('catalogo'))
+    if (!instrumento) return
 
     onPublish({
-      id: Date.now(),
-      ...item,
-      condition: campo('condicao'),
-      price: formatarPreco(value),
-      location: localizacaoDoUsuario,
-      image: fotos[0] ?? '/placeholder.jpg',
-      fotos: fotos.length > 0 ? fotos : undefined,
-      vendedor: vendedorAtual,
+      idAnuncio: crypto.randomUUID(),
+      titulo: `${instrumento.marca} ${instrumento.modelo}`,
+      preco: value,
+      condicao: campo('condicao'),
+      status: 'ativo',
+      dataCriacao: new Date().toISOString(),
+      idVendedor: usuarioLogado.idUsuario,
+      instrumento,
+      fotos: fotos.map((url) => ({ idFoto: crypto.randomUUID(), url, tamanhoMB: 0 })),
+      localizacao: localizacaoDoUsuario,
     })
   }
 
@@ -91,7 +101,7 @@ export function Sell({ onPublish }: { onPublish: (anuncio: Product) => void }) {
                 Instrumento do catálogo mestre
                 <select name="catalogo" defaultValue="" required={!preencherManual} disabled={preencherManual} className="mt-2 w-full rounded-lg border bg-white px-3 py-3 font-normal disabled:bg-gray-100 disabled:text-gray-400">
                   <option value="">Selecione um instrumento</option>
-                  {catalogoMestre.map((instrumento) => <option key={instrumento.title}>{instrumento.title}</option>)}
+                  {catalogoMestre.map((i) => <option key={i.idInstrumento} value={i.idInstrumento}>{i.marca} {i.modelo}</option>)}
                 </select>
               </label>
               <label className="flex items-center gap-3 text-sm"><input type="checkbox" checked={preencherManual} onChange={(e) => setPreencherManual(e.target.checked)} /> Modelo não consta no catálogo? Preencha as especificações manualmente</label>
