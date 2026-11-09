@@ -1,0 +1,219 @@
+// Modelo relacional do Headstock (RNF02), derivado do diagrama de classes.
+// Campos marcados com "fora do diagrama" foram acrescentados para cumprir RFs/RNs.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// Usuario (abstrata) + UsuarioComum + Administrador, mapeados em tabela única.
+/// tipo = "comum" (UsuarioComum) | "administrador" (Administrador).
+model Usuario {
+  idUsuario      String   @id @default(uuid())
+  tipo           String   @default("comum")
+  nome           String
+  email          String   @unique
+  senhaHash      String
+  dataCadastro   DateTime @default(now())
+  reputacaoMedia Float    @default(0)
+  /// RN07: suspenso de criar anúncios quando a média de avaliações fica abaixo de 2.
+  suspenso       Boolean  @default(false)
+  /// RF15: banimento aplicado por um administrador (fora do diagrama).
+  banido         Boolean  @default(false)
+
+  // UsuarioComum
+  chavePix         String?
+  enderecoCompleto String?
+
+  // Administrador
+  nivelAcesso Int?
+
+  // RF01: recuperação de senha (fora do diagrama)
+  tokenRecuperacaoHash   String?
+  tokenRecuperacaoExpira DateTime?
+
+  anuncios            Anuncio[]
+  favoritos           Favorito[]
+  pedidos             Pedido[]
+  fotosEnviadas       FotoAnuncio[]
+  mensagensEnviadas   Mensagem[] @relation("MensagemRemetente")
+  mensagensRecebidas  Mensagem[] @relation("MensagemDestinatario")
+  denunciasFeitas     Denuncia[] @relation("DenunciaAutor")
+  denunciasRecebidas  Denuncia[] @relation("DenunciaUsuario")
+  denunciasAnalisadas Denuncia[] @relation("DenunciaAdministrador")
+}
+
+/// Registros com noCatalogo = true formam o catálogo mestre (RF14).
+/// Cada anúncio tem sua própria cópia (1:1), que o vendedor pode editar (RF03) sem alterar o catálogo.
+model Instrumento {
+  idInstrumento  String  @id @default(uuid())
+  marca          String
+  modelo         String
+  categoria      String
+  tipoCaptacao   String  @default("")
+  numeroCordas   Int     @default(0)
+  orientacao     String  @default("")
+  /// RF03: especificações livres (madeira, ponte, escala...) (fora do diagrama).
+  especificacoes Json    @default("{}")
+  noCatalogo     Boolean @default(false)
+
+  anuncio Anuncio?
+
+  @@index([noCatalogo, categoria])
+}
+
+/// status = "ativo" | "pausado" | "vendido" | "removido"
+model Anuncio {
+  idAnuncio   String   @id @default(uuid())
+  titulo      String
+  preco       Decimal  @db.Decimal(12, 2)
+  condicao    String
+  status      String   @default("ativo")
+  dataCriacao DateTime @default(now())
+  localizacao String
+  descricao   String?
+
+  idVendedor    String
+  vendedor      Usuario     @relation(fields: [idVendedor], references: [idUsuario])
+  idInstrumento String      @unique
+  instrumento   Instrumento @relation(fields: [idInstrumento], references: [idInstrumento])
+
+  fotos     FotoAnuncio[]
+  favoritos Favorito[]
+  pedidos   Pedido[]
+  mensagens Mensagem[]
+  denuncias Denuncia[]
+
+  @@index([status, dataCriacao])
+  @@index([status, preco])
+  @@index([idVendedor])
+}
+
+/// Composição Anuncio 1 — 3..* FotoAnuncio. A foto é enviada antes (idAnuncio nulo)
+/// e vinculada ao criar/editar o anúncio.
+model FotoAnuncio {
+  idFoto    String   @id @default(uuid())
+  url       String
+  tamanhoMB Float    @default(0)
+  ordem     Int      @default(0)
+  mimeType  String?
+  /// Imagem já redimensionada (RNF08). Nulo quando a url é externa.
+  dados     Bytes?
+  dataEnvio DateTime @default(now())
+
+  idDono    String
+  dono      Usuario  @relation(fields: [idDono], references: [idUsuario], onDelete: Cascade)
+  idAnuncio String?
+  anuncio   Anuncio? @relation(fields: [idAnuncio], references: [idAnuncio], onDelete: Cascade)
+
+  @@index([idAnuncio, ordem])
+  @@index([idDono])
+}
+
+/// Associação "favorita" entre UsuarioComum e Anuncio (RF12).
+model Favorito {
+  idUsuario   String
+  idAnuncio   String
+  dataCriacao DateTime @default(now())
+
+  usuario Usuario @relation(fields: [idUsuario], references: [idUsuario], onDelete: Cascade)
+  anuncio Anuncio @relation(fields: [idAnuncio], references: [idAnuncio], onDelete: Cascade)
+
+  @@id([idUsuario, idAnuncio])
+}
+
+/// statusPedido = "pago" | "enviado" | "entregue" | "concluido" | "em_disputa"
+///              | "devolucao_autorizada" | "reembolsado" | "cancelado"
+model Pedido {
+  idPedido       String   @id @default(uuid())
+  valorTotal     Decimal  @db.Decimal(12, 2)
+  taxaPlataforma Decimal  @db.Decimal(12, 2)
+  valorFrete     Decimal  @db.Decimal(12, 2)
+  codigoRastreio String?
+  statusPedido   String   @default("pago")
+  dataCriacao    DateTime @default(now())
+
+  // Fora do diagrama: dados do pagamento e prazos (RN02, RN03, RN04, RF16)
+  metodoPagamento  String
+  idTransacao      String
+  cepDestino       String
+  dataPagamento    DateTime?
+  prazoRastreio    DateTime?
+  dataEnvio        DateTime?
+  dataEntrega      DateTime?
+  dataConclusao    DateTime?
+  motivoDisputa    String?
+  resolucaoDisputa String?
+
+  idComprador String
+  comprador   Usuario @relation(fields: [idComprador], references: [idUsuario])
+  idAnuncio   String
+  anuncio     Anuncio @relation(fields: [idAnuncio], references: [idAnuncio])
+
+  avaliacoes Avaliacao[]
+
+  @@index([idComprador])
+  @@index([idAnuncio])
+  @@index([statusPedido])
+}
+
+/// Pedido 1 — 0..2 Avaliacao (uma do vendedor e uma do produto). tipoAvaliacao = "vendedor" | "produto"
+model Avaliacao {
+  idAvaliacao        String   @id @default(uuid())
+  notaEstrelas       Int
+  textoJustificativo String
+  tipoAvaliacao      String
+  dataCriacao        DateTime @default(now())
+
+  idPedido String
+  pedido   Pedido @relation(fields: [idPedido], references: [idPedido], onDelete: Cascade)
+
+  @@unique([idPedido, tipoAvaliacao])
+}
+
+model Mensagem {
+  idMensagem String   @id @default(uuid())
+  conteudo   String
+  dataEnvio  DateTime @default(now())
+
+  idRemetente    String
+  remetente      Usuario  @relation("MensagemRemetente", fields: [idRemetente], references: [idUsuario])
+  // Fora do diagrama: destinatário e anúncio da conversa (RF10)
+  idDestinatario String
+  destinatario   Usuario  @relation("MensagemDestinatario", fields: [idDestinatario], references: [idUsuario])
+  idAnuncio      String?
+  anuncio        Anuncio? @relation(fields: [idAnuncio], references: [idAnuncio], onDelete: SetNull)
+
+  denuncias Denuncia[]
+
+  @@index([idRemetente, dataEnvio])
+  @@index([idDestinatario, dataEnvio])
+}
+
+/// status = "aberta" | "em_analise" | "resolvida" | "descartada"
+/// Alvo (RF13): exatamente um entre idAnuncio, idUsuarioDenunciado e idMensagem.
+model Denuncia {
+  idDenuncia       String   @id @default(uuid())
+  motivo           String
+  descricaoTextual String
+  status           String   @default("aberta")
+  dataCriacao      DateTime @default(now())
+  resolucao        String?
+
+  idAutor             String
+  autor               Usuario   @relation("DenunciaAutor", fields: [idAutor], references: [idUsuario])
+  idAdministrador     String?
+  administrador       Usuario?  @relation("DenunciaAdministrador", fields: [idAdministrador], references: [idUsuario], onDelete: SetNull)
+  idAnuncio           String?
+  anuncio             Anuncio?  @relation(fields: [idAnuncio], references: [idAnuncio], onDelete: SetNull)
+  idUsuarioDenunciado String?
+  usuarioDenunciado   Usuario?  @relation("DenunciaUsuario", fields: [idUsuarioDenunciado], references: [idUsuario], onDelete: SetNull)
+  idMensagem          String?
+  mensagem            Mensagem? @relation(fields: [idMensagem], references: [idMensagem], onDelete: SetNull)
+
+  @@index([status])
+}
