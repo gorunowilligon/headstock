@@ -6,12 +6,13 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { ReportDialog } from '@/components/detail/report-dialog'
 import { Spec } from '@/components/detail/spec'
+import { registrarDenuncia } from '@/lib/api/denuncias'
 import { exibirEspecificacoesTecnicas } from '@/lib/config'
 import { buscarUsuario, usuarioLogado } from '@/lib/mock-data'
-import type { Anuncio, Denuncia } from '@/lib/models'
+import type { Anuncio } from '@/lib/models'
 import { formatarPreco } from '@/lib/price'
 
-export function Detail({ anuncio, onBack, onReport }: { anuncio: Anuncio, onBack: () => void, onReport: (denuncia: Denuncia) => void }) {
+export function Detail({ anuncio, onBack }: { anuncio: Anuncio, onBack: () => void }) {
   const [photo, setPhoto] = useState(0)
   const vendedor = buscarUsuario(anuncio.idVendedor) ?? usuarioLogado
   const iniciaisVendedor = vendedor.nome.split(' ').map((parte) => parte[0]).slice(0, 2).join('')
@@ -19,6 +20,8 @@ export function Detail({ anuncio, onBack, onReport }: { anuncio: Anuncio, onBack
   const [motivo, setMotivo] = useState('')
   const [descricaoTextual, setDescricaoTextual] = useState('')
   const [reportSent, setReportSent] = useState(false)
+  const [enviandoDenuncia, setEnviandoDenuncia] = useState(false)
+  const [erroDenuncia, setErroDenuncia] = useState('')
   const photos = anuncio.fotos.length ? anuncio.fotos.map((foto) => foto.url) : ['/placeholder.jpg']
   const parcela = anuncio.preco / 10
 
@@ -28,20 +31,31 @@ export function Detail({ anuncio, onBack, onReport }: { anuncio: Anuncio, onBack
     return () => clearTimeout(timer)
   }, [reportSent])
 
-  const handleReportSubmit = (e: FormEvent<HTMLFormElement>) => {
+  const abrirDenuncia = () => {
+    setErroDenuncia('')
+    setIsReportOpen(true)
+  }
+
+  const handleReportSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    onReport({
-      idDenuncia: crypto.randomUUID(),
-      motivo,
-      descricaoTextual,
-      status: 'aberta',
-      idAutor: usuarioLogado.idUsuario,
-      idAnuncio: anuncio.idAnuncio,
-    })
-    setIsReportOpen(false)
-    setMotivo('')
-    setDescricaoTextual('')
-    setReportSent(true)
+    setEnviandoDenuncia(true)
+    setErroDenuncia('')
+    try {
+      await registrarDenuncia({
+        motivo,
+        descricaoTextual,
+        idAutor: usuarioLogado.idUsuario,
+        idAnuncio: anuncio.idAnuncio,
+      })
+      setIsReportOpen(false)
+      setMotivo('')
+      setDescricaoTextual('')
+      setReportSent(true)
+    } catch (erro) {
+      setErroDenuncia(erro instanceof Error ? erro.message : 'Não foi possível registrar a denúncia.')
+    } finally {
+      setEnviandoDenuncia(false)
+    }
   }
 
   return (
@@ -108,13 +122,13 @@ export function Detail({ anuncio, onBack, onReport }: { anuncio: Anuncio, onBack
               </div>
             </div>
             <div>
-              <button onClick={() => setIsReportOpen(true)} className="flex w-fit items-center gap-1.5 text-xs font-semibold text-gray-400 hover:text-red-600"><Flag className="size-3.5" /> Denunciar</button>
+              <button onClick={abrirDenuncia} className="flex w-fit items-center gap-1.5 text-xs font-semibold text-gray-400 hover:text-red-600"><Flag className="size-3.5" /> Denunciar</button>
               {reportSent && <p role="status" className="mt-2 text-xs font-semibold text-green-600">Denúncia enviada para a moderação.</p>}
             </div>
           </div>
         </aside>
       </div>
-      <ReportDialog open={isReportOpen} motivo={motivo} onMotivoChange={setMotivo} descricaoTextual={descricaoTextual} onDescricaoTextualChange={setDescricaoTextual} onClose={() => setIsReportOpen(false)} onSubmit={handleReportSubmit} />
+      <ReportDialog open={isReportOpen} motivo={motivo} onMotivoChange={setMotivo} descricaoTextual={descricaoTextual} onDescricaoTextualChange={setDescricaoTextual} enviando={enviandoDenuncia} erro={erroDenuncia} onClose={() => { if (!enviandoDenuncia) setIsReportOpen(false) }} onSubmit={handleReportSubmit} />
     </main>
   )
 }

@@ -1,10 +1,9 @@
 import type { FormEvent } from 'react'
 import { Flag, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { LIMITE_DESCRICAO_DENUNCIA, MOTIVOS_DENUNCIA } from '@/lib/motivos-denuncia'
 
-const motivos = ['Anúncio falso ou golpe', 'Produto proibido', 'Informações enganosas', 'Conteúdo ofensivo', 'Outro']
-
-export function ReportDialog({ open, motivo, onMotivoChange, descricaoTextual, onDescricaoTextualChange, onClose, onSubmit }: { open: boolean, motivo: string, onMotivoChange: (value: string) => void, descricaoTextual: string, onDescricaoTextualChange: (value: string) => void, onClose: () => void, onSubmit: (e: FormEvent<HTMLFormElement>) => void }) {
+export function ReportDialog({ open, motivo, onMotivoChange, descricaoTextual, onDescricaoTextualChange, enviando, erro, onClose, onSubmit }: { open: boolean, motivo: string, onMotivoChange: (value: string) => void, descricaoTextual: string, onDescricaoTextualChange: (value: string) => void, enviando: boolean, erro: string, onClose: () => void, onSubmit: (e: FormEvent<HTMLFormElement>) => void }) {
   if (!open) return null
 
   return (
@@ -25,7 +24,7 @@ export function ReportDialog({ open, motivo, onMotivoChange, descricaoTextual, o
           Motivo da denúncia
           <select value={motivo} onChange={(e) => onMotivoChange(e.target.value)} required autoFocus className="mt-2 w-full rounded-lg border bg-white px-3 py-3 font-normal">
             <option value="">Selecione</option>
-            {motivos.map((m) => <option key={m}>{m}</option>)}
+            {MOTIVOS_DENUNCIA.map((m) => <option key={m}>{m}</option>)}
           </select>
         </label>
         <label className="mt-4 block text-sm font-semibold">
@@ -34,14 +33,16 @@ export function ReportDialog({ open, motivo, onMotivoChange, descricaoTextual, o
             value={descricaoTextual}
             onChange={(e) => onDescricaoTextualChange(e.target.value)}
             required
+            maxLength={LIMITE_DESCRICAO_DENUNCIA}
             rows={4}
             className="mt-2 w-full resize-none rounded-lg border px-3 py-3 font-normal outline-none focus:border-red-600"
             placeholder="Descreva o problema com este anúncio..."
           />
         </label>
+        {erro && <p role="alert" className="mt-4 text-sm font-semibold text-red-600">{erro}</p>}
         <div className="mt-6 flex justify-end gap-2">
-          <Button type="button" variant="outline" onClick={onClose}>Cancelar</Button>
-          <Button type="submit" disabled={!motivo || !descricaoTextual.trim()} className="bg-red-600 hover:bg-red-700">Enviar Denúncia</Button>
+          <Button type="button" variant="outline" onClick={onClose} disabled={enviando}>Cancelar</Button>
+          <Button type="submit" disabled={enviando || !motivo || !descricaoTextual.trim()} className="bg-red-600 hover:bg-red-700">{enviando ? 'Enviando...' : 'Enviar Denúncia'}</Button>
         </div>
       </form>
     </div>

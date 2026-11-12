@@ -56,6 +56,7 @@ export interface Denuncia {
   status: 'aberta' | 'em análise' | 'resolvida'
   idAutor: string
   idAnuncio: string // não consta no diagrama
+  dataCriacao?: string // não consta no diagrama; preenchido pelo servidor
 }
 
 export interface Pedido {
