@@ -12,27 +12,20 @@ import { Favorites } from '@/components/favorites/favorites'
 import { usePersistentState } from '@/hooks/use-persistent-state'
 import { filtrosVazios, type FiltrosBusca } from '@/lib/busca'
 import { anuncios, usuarioLogado } from '@/lib/mock-data'
-import type { Anuncio } from '@/lib/models'
+import type { Anuncio, Denuncia } from '@/lib/models'
 
 export default function Page() {
   const [currentView, setCurrentView] = useState('home')
   const [previousView, setPreviousView] = useState('home')
   const [anuncioSelecionadoId, setAnuncioSelecionadoId] = useState<string | null>(null)
-  const [anuncioEmEdicaoId, setAnuncioEmEdicaoId] = useState<string | null>(null)
-  const [abaPerfil, setAbaPerfil] = useState('dados')
   const [filtros, setFiltros] = useState<FiltrosBusca>(filtrosVazios)
   const [catalogo, setCatalogo] = usePersistentState<Anuncio[]>('headstock:v2:catalogo', anuncios)
   const [favoritos, setFavoritos] = usePersistentState<string[]>('headstock:v2:favoritos', [])
+  const [, setDenuncias] = usePersistentState<Denuncia[]>('headstock:v2:denuncias', [])
 
   const catalogoAtivo = catalogo.filter((anuncio) => anuncio.status === 'ativo')
   const meusAnuncios = catalogo.filter((anuncio) => anuncio.idVendedor === usuarioLogado.idUsuario)
   const anuncioSelecionado = catalogo.find((anuncio) => anuncio.idAnuncio === anuncioSelecionadoId)
-  const anuncioEmEdicao = meusAnuncios.find((anuncio) => anuncio.idAnuncio === anuncioEmEdicaoId)
-
-  const navigate = (view: string) => {
-    if (view === 'profile') setAbaPerfil('dados')
-    setCurrentView(view)
-  }
 
   // Ao digitar na busca do cabeçalho, mostra os resultados na tela inicial.
   const alterarTermo = (termo: string) => {
@@ -55,25 +48,13 @@ export default function Page() {
     setCurrentView('home')
   }
 
-  const editListing = (id: string) => {
-    setAnuncioEmEdicaoId(id)
-    setCurrentView('edit')
-  }
-
-  const voltarParaMeusAnuncios = () => {
-    setAnuncioEmEdicaoId(null)
-    setAbaPerfil('anuncios')
-    setCurrentView('profile')
-  }
-
-  const saveListing = (anuncioEditado: Anuncio) => {
-    setCatalogo((prev) => prev.map((anuncio) => anuncio.idAnuncio === anuncioEditado.idAnuncio ? anuncioEditado : anuncio))
-    voltarParaMeusAnuncios()
-  }
-
   const deleteListing = (id: string) => {
     setCatalogo((prev) => prev.filter((anuncio) => anuncio.idAnuncio !== id))
     setFavoritos((prev) => prev.filter((favId) => favId !== id))
+  }
+
+  const submitReport = (denuncia: Denuncia) => {
+    setDenuncias((prev) => [...prev, denuncia])
   }
 
   const openDetail = (id: string) => {
@@ -83,18 +64,17 @@ export default function Page() {
   }
 
   const renderView = () => {
-    if (currentView === 'detail' && anuncioSelecionado) return <Detail key={anuncioSelecionado.idAnuncio} anuncio={anuncioSelecionado} onBack={() => setCurrentView(previousView)} />
-    if (currentView === 'edit' && anuncioEmEdicao) return <Sell key={anuncioEmEdicao.idAnuncio} anuncio={anuncioEmEdicao} onPublish={saveListing} onCancel={voltarParaMeusAnuncios} />
-    if (currentView === 'sell') return <Sell key="novo" onPublish={publishListing} />
+    if (currentView === 'detail' && anuncioSelecionado) return <Detail key={anuncioSelecionado.idAnuncio} anuncio={anuncioSelecionado} onBack={() => setCurrentView(previousView)} onReport={submitReport} />
+    if (currentView === 'sell') return <Sell onPublish={publishListing} />
     if (currentView === 'chat') return <Chat />
-    if (currentView === 'profile') return <Profile key={abaPerfil} meusAnuncios={meusAnuncios} abaInicial={abaPerfil} onEditListing={editListing} onTogglePause={togglePause} onDeleteListing={deleteListing} />
+    if (currentView === 'profile') return <Profile meusAnuncios={meusAnuncios} onTogglePause={togglePause} onDeleteListing={deleteListing} />
     if (currentView === 'favorites') return <Favorites catalogo={catalogoAtivo} onOpen={openDetail} onBrowse={() => setCurrentView('home')} favoritos={favoritos} onToggleFavorite={toggleFavorite} />
     return <Home catalogo={catalogoAtivo} filtros={filtros} onFiltrosChange={setFiltros} onLimparFiltros={() => setFiltros(filtrosVazios)} onOpen={openDetail} favoritos={favoritos} onToggleFavorite={toggleFavorite} />
   }
 
   return (
     <div className="min-h-screen bg-white text-gray-950">
-      <Header onNavigate={navigate} termo={filtros.termo} onTermoChange={alterarTermo} />
+      <Header onNavigate={setCurrentView} termo={filtros.termo} onTermoChange={alterarTermo} />
       {renderView()}
       <Footer />
     </div>

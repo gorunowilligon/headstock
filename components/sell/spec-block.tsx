@@ -1,14 +1,8 @@
-'use client'
-
-import { useSpecValue } from '@/components/sell/spec-values'
-
-export function SpecInput({ label, name, type = 'text', placeholder, min, max, required }: { label: string, name?: string, type?: 'text' | 'number', placeholder?: string, min?: number, max?: number, required?: boolean }) {
-  const valorInicial = useSpecValue(name)
-
+export function SpecBlock({ title, children }: { title: string, children: React.ReactNode }) {
   return (
-    <label className="block text-sm font-semibold">
-      {label}
-      <input name={name} type={type} min={min} max={max} placeholder={placeholder} required={required} defaultValue={valorInicial} className="mt-2 w-full rounded-lg border bg-white px-3 py-3 font-normal" />
-    </label>
+    <section className="rounded-xl bg-gray-50 p-5">
+      <h3 className="mb-4 font-bold">{title}</h3>
+      <div className="grid gap-5 sm:grid-cols-2">{children}</div>
+    </section>
   )
 }
