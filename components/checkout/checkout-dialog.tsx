@@ -15,7 +15,7 @@ interface RespostaCompra {
 }
 
 export interface ItemCheckout {
-  idAnuncio: string
+  idAnuncio: number
   titulo: string
   preco: number
   capa?: string
@@ -25,7 +25,7 @@ export interface ItemCheckout {
 export function CheckoutDialog({ item, oferta, onClose, onConcluido }: {
   item: ItemCheckout
   /** Proposta aceita (RF08): o produto sai pelo valor dela. */
-  oferta?: { idOferta: string, valor: number }
+  oferta?: { idOferta: number, valor: number }
   onClose: () => void
   onConcluido: (pedido: Pedido) => void
 }) {

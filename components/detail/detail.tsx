@@ -16,13 +16,13 @@ import { formatarPreco } from '@/lib/price'
 
 /** Conversa a abrir no chat: a outra pessoa e o anúncio negociado. */
 export interface AlvoConversa {
-  com: { idUsuario: string, nome: string }
-  anuncio: { idAnuncio: string, titulo: string } | null
+  com: { idUsuario: number, nome: string }
+  anuncio: { idAnuncio: number, titulo: string } | null
 }
 
 export function Detail({ anuncio, idUsuarioLogado, onBack, onReport, onRequireLogin, onComprado, onConversar }: {
   anuncio: Anuncio
-  idUsuarioLogado: string | null
+  idUsuarioLogado: number | null
   onBack: () => void
   onReport: (denuncia: NovaDenuncia) => Promise<void>
   onRequireLogin: () => void

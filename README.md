@@ -40,7 +40,7 @@ São dois projetos na Vercel, ligados ao mesmo repositório:
 | API | `backend` | `DATABASE_URL` (PostgreSQL, ex.: Neon ou Supabase), `JWT_SECRET`, `PUBLIC_URL`, `CORS_ORIGINS` |
 | Frontend | `/` | `NEXT_PUBLIC_API_URL` (URL da API) |
 
-O build da API (`vercel-build`) aplica as migrações (`prisma migrate deploy`), então as tabelas são criadas no primeiro deploy depois que `DATABASE_URL` for configurada.
+O banco (Supabase) é criado pelos scripts SQL de `backend/sql/`, rodados no SQL Editor; o build da API só gera o cliente Prisma. A ordem dos scripts está em [backend/README.md](backend/README.md).
 
 ## Funcionalidades
 

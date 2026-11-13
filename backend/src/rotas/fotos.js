@@ -1,4 +1,3 @@
-import crypto from 'node:crypto'
 import multer from 'multer'
 import sharp from 'sharp'
 import { prisma } from '../db.js'
@@ -49,20 +48,28 @@ rotas.post('/', {
     if (!arquivos.length) throw new HttpError(400, 'Envie ao menos uma imagem no campo "fotos"')
 
     const processadas = await Promise.all(arquivos.map(redimensionar))
-    const fotos = await prisma.$transaction(processadas.map((dados) => {
-      const idFoto = crypto.randomUUID()
-      return prisma.fotoAnuncio.create({
-        data: {
-          idFoto,
-          url: `/fotos/${idFoto}`,
-          mimeType: 'image/jpeg',
-          dados,
-          tamanhoMB: arredondar(dados.length / BYTES_POR_MB),
-          idDono: usuario.idUsuario,
-        },
-        select: { idFoto: true, url: true, tamanhoMB: true },
-      })
-    }))
+    // O id é gerado pelo banco; a URL ("/fotos/<id>") só pode ser montada depois do INSERT.
+    const fotos = await prisma.$transaction(async (tx) => {
+      const criadas = []
+      for (const dados of processadas) {
+        const { idFoto } = await tx.fotoAnuncio.create({
+          data: {
+            url: '',
+            mimeType: 'image/jpeg',
+            dados,
+            tamanhoMB: arredondar(dados.length / BYTES_POR_MB),
+            idDono: usuario.idUsuario,
+          },
+          select: { idFoto: true },
+        })
+        criadas.push(await tx.fotoAnuncio.update({
+          where: { idFoto },
+          data: { url: `/fotos/${idFoto}` },
+          select: { idFoto: true, url: true, tamanhoMB: true },
+        }))
+      }
+      return criadas
+    })
     return fotos.map(serializarFoto)
   },
 })

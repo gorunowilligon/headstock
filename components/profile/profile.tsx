@@ -25,9 +25,9 @@ export function Profile({ usuario, meusAnuncios, abaInicial = 'dados', onSalvarP
   abaInicial?: string
   onSalvarPerfil: (campos: CamposPerfil) => Promise<void>
   onSair: () => void
-  onEditListing: (id: string) => void
-  onTogglePause: (id: string) => void
-  onDeleteListing: (id: string) => void
+  onEditListing: (id: number) => void
+  onTogglePause: (id: number) => void
+  onDeleteListing: (id: number) => void
 }) {
   const [tab, setTab] = useState(abaInicial)
   const [salvando, setSalvando] = useState(false)

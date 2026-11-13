@@ -2,6 +2,7 @@ import { z } from 'zod'
 import { prisma } from '../db.js'
 import { HttpError, naoEncontrado } from '../http/erros.js'
 import { criarRouter } from '../http/rota.js'
+import { idNumerico } from '../http/ids.js'
 import { serializarMensagem } from '../http/serializar.js'
 
 const rotas = criarRouter('/mensagens', 'Chat')
@@ -13,8 +14,8 @@ rotas.post('/', {
   auth: 'usuario',
   status: 201,
   body: z.object({
-    idDestinatario: z.string().min(1),
-    idAnuncio: z.string().min(1).optional().describe('Anúncio sobre o qual a conversa acontece'),
+    idDestinatario: idNumerico,
+    idAnuncio: idNumerico.optional().describe('Anúncio sobre o qual a conversa acontece'),
     conteudo: z.string().trim().min(1).max(2000),
   }),
   handler: async ({ usuario, body }) => {
@@ -65,8 +66,8 @@ rotas.get('/', {
   resumo: 'Histórico de mensagens com outro usuário (RF10)',
   auth: 'usuario',
   query: z.object({
-    com: z.string().min(1).describe('idUsuario da outra pessoa'),
-    anuncio: z.string().min(1).optional().describe('Filtra pela conversa sobre um anúncio'),
+    com: idNumerico.describe('idUsuario da outra pessoa'),
+    anuncio: idNumerico.optional().describe('Filtra pela conversa sobre um anúncio'),
   }),
   handler: async ({ usuario, query }) => {
     const eu = usuario.idUsuario

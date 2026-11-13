@@ -20,7 +20,7 @@ type Janela =
   | { tipo: 'nova-proposta', oferta: Oferta }
   | { tipo: 'compra', oferta: Oferta, item: ItemCheckout }
 
-export function Chat({ idUsuario, alvoInicial, onComprado }: { idUsuario: string, alvoInicial: AlvoConversa | null, onComprado: (pedido: Pedido) => void }) {
+export function Chat({ idUsuario, alvoInicial, onComprado }: { idUsuario: number, alvoInicial: AlvoConversa | null, onComprado: (pedido: Pedido) => void }) {
   const [conversas, setConversas] = useState<Conversa[]>([])
   const [selecionada, setSelecionada] = useState<AlvoConversa | null>(alvoInicial)
   const [mensagens, setMensagens] = useState<Mensagem[]>([])
@@ -252,7 +252,7 @@ function Balao({ mensagem, minha }: { mensagem: Mensagem, minha: boolean }) {
 
 function CartaoOferta({ oferta, idUsuario, onResponder, onContrapropor, onComprar }: {
   oferta: Oferta
-  idUsuario: string
+  idUsuario: number
   onResponder: (oferta: Oferta, acao: 'aceitar' | 'recusar') => void
   onContrapropor: (oferta: Oferta) => void
   onComprar: (oferta: Oferta) => void

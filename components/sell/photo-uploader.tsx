@@ -21,7 +21,7 @@ export function PhotoUploader({ fotos, onChange, erro }: { fotos: FotoAnuncio[],
     }
   }
 
-  const removerFoto = (id: string) => onChange(fotos.filter((foto) => foto.idFoto !== id))
+  const removerFoto = (id: number) => onChange(fotos.filter((foto) => foto.idFoto !== id))
 
   return (
     <div>

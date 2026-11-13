@@ -1,5 +1,5 @@
 export interface Usuario {
-  idUsuario: string
+  idUsuario: number
   nome: string
   email: string
   senhaHash: string
@@ -19,7 +19,7 @@ export interface Administrador extends Usuario {
 
 /** Dados públicos de um usuário, como a API devolve dentro de um anúncio. */
 export interface UsuarioPublico {
-  idUsuario: string
+  idUsuario: number
   nome: string
   reputacaoMedia: number
   dataCadastro: string
@@ -36,7 +36,7 @@ export interface UsuarioSessao extends UsuarioPublico {
 }
 
 export interface Instrumento {
-  idInstrumento: string
+  idInstrumento: number
   marca: string
   modelo: string
   categoria: string
@@ -48,14 +48,14 @@ export interface Instrumento {
 
 /** Corpo de POST /anuncios. As fotos são IDs devolvidos por POST /fotos. */
 export interface NovoAnuncio {
-  idInstrumentoCatalogo?: string
+  idInstrumentoCatalogo?: number
   instrumento?: Omit<Instrumento, 'idInstrumento'>
   condicao: string
   preco: number
   localizacao: string
   descricao?: string
   aceitaPropostas: boolean
-  fotos: string[]
+  fotos: number[]
 }
 
 /** Corpo de PATCH /anuncios/:id (todos os campos são opcionais na API). */
@@ -66,17 +66,17 @@ export interface EdicaoAnuncio {
   descricao: string
   aceitaPropostas: boolean
   instrumento: Omit<Instrumento, 'idInstrumento'>
-  fotos: string[]
+  fotos: number[]
 }
 
 export interface NovaDenuncia {
-  idAnuncio: string
+  idAnuncio: number
   motivo: string
   descricaoTextual: string
 }
 
 export interface FotoAnuncio {
-  idFoto: string
+  idFoto: number
   url: string
   tamanhoMB: number
 }
@@ -84,13 +84,13 @@ export interface FotoAnuncio {
 export type StatusAnuncio = 'ativo' | 'pausado' | 'vendido' | 'removido'
 
 export interface Anuncio {
-  idAnuncio: string
+  idAnuncio: number
   titulo: string
   preco: number
   condicao: string
   status: StatusAnuncio
   dataCriacao: string
-  idVendedor: string
+  idVendedor: number
   instrumento: Instrumento
   fotos: FotoAnuncio[]
   localizacao: string // não consta no diagrama
@@ -100,18 +100,18 @@ export interface Anuncio {
 }
 
 export interface Denuncia {
-  idDenuncia: string
+  idDenuncia: number
   motivo: string
   descricaoTextual: string
   status: 'aberta' | 'em análise' | 'resolvida'
-  idAutor: string
-  idAnuncio: string // não consta no diagrama
+  idAutor: number
+  idAnuncio: number // não consta no diagrama
 }
 
 export type StatusPedido = 'pago' | 'enviado' | 'entregue' | 'concluido' | 'em_disputa' | 'devolucao_autorizada' | 'reembolsado' | 'cancelado'
 
 export interface Pedido {
-  idPedido: string
+  idPedido: number
   valorTotal: number
   valorProduto: number
   taxaPlataforma: number
@@ -129,9 +129,9 @@ export interface Pedido {
   liberacaoPagamentoEm: string | null
   motivoDisputa: string | null
   resolucaoDisputa: string | null
-  idComprador: string
-  idAnuncio: string
-  idOferta: string | null
+  idComprador: number
+  idAnuncio: number
+  idOferta: number | null
   anuncio?: Anuncio
   comprador?: UsuarioPublico
   avaliacoes?: Avaliacao[]
@@ -147,7 +147,7 @@ export interface Frete {
 export interface Recibo {
   numero: string
   emitidoEm: string
-  anuncio: { idAnuncio: string, titulo: string }
+  anuncio: { idAnuncio: number, titulo: string }
   valorProduto: number
   percentualTaxa: number
   taxaPlataforma: number
@@ -155,18 +155,18 @@ export interface Recibo {
 }
 
 export interface Mensagem {
-  idMensagem: string
+  idMensagem: number
   conteudo: string
   dataEnvio: string
-  idRemetente: string
-  idDestinatario: string
-  idAnuncio: string | null
+  idRemetente: number
+  idDestinatario: number
+  idAnuncio: number | null
 }
 
 /** Item de GET /mensagens/conversas. */
 export interface Conversa {
-  com: { idUsuario: string, nome: string }
-  anuncio: { idAnuncio: string, titulo: string } | null
+  com: { idUsuario: number, nome: string }
+  anuncio: { idAnuncio: number, titulo: string } | null
   ultimaMensagem?: Mensagem
 }
 
@@ -174,23 +174,23 @@ export type StatusOferta = 'pendente' | 'aceita' | 'recusada' | 'substituida' | 
 
 /** Proposta de preço (RF08). Não consta no diagrama. */
 export interface Oferta {
-  idOferta: string
+  idOferta: number
   valor: number
   status: StatusOferta
   dataCriacao: string
   expiraEm: string
   dataResposta: string | null
-  idAnuncio: string
-  idComprador: string
-  idAutor: string
-  idVendedor: string
-  anuncio?: { idAnuncio: string, titulo: string, preco: number, status: StatusAnuncio }
+  idAnuncio: number
+  idComprador: number
+  idAutor: number
+  idVendedor: number
+  anuncio?: { idAnuncio: number, titulo: string, preco: number, status: StatusAnuncio }
 }
 
 export interface Avaliacao {
-  idAvaliacao: string
+  idAvaliacao: number
   notaEstrelas: number
   textoJustificativo: string
   tipoAvaliacao: 'vendedor' | 'produto'
-  idPedido: string
+  idPedido: number
 }

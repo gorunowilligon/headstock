@@ -2,6 +2,7 @@ import { z } from 'zod'
 import { prisma } from '../db.js'
 import { HttpError, naoEncontrado } from '../http/erros.js'
 import { criarRouter } from '../http/rota.js'
+import { idNumerico } from '../http/ids.js'
 import { serializarOferta } from '../http/serializar.js'
 import { HORAS_VALIDADE_OFERTA, somarHoras } from '../regras.js'
 
@@ -49,7 +50,7 @@ rotas.post('/', {
   descricao: 'Substitui a proposta anterior do mesmo comprador neste anúncio. Vale por 24h.',
   auth: 'usuario',
   status: 201,
-  body: z.object({ idAnuncio: z.string().min(1), valor }),
+  body: z.object({ idAnuncio: idNumerico, valor }),
   handler: async ({ usuario, body }) => {
     const anuncio = await prisma.anuncio.findUnique({ where: { idAnuncio: body.idAnuncio } })
     if (!anuncio || anuncio.status !== 'ativo') throw naoEncontrado('Anúncio disponível')
@@ -84,8 +85,8 @@ rotas.get('/', {
   resumo: 'Listar propostas em que o usuário é comprador ou vendedor (RF08)',
   auth: 'usuario',
   query: z.object({
-    anuncio: z.string().min(1).optional().describe('Apenas as propostas deste anúncio'),
-    com: z.string().min(1).optional().describe('idUsuario da outra parte da negociação'),
+    anuncio: idNumerico.optional().describe('Apenas as propostas deste anúncio'),
+    com: idNumerico.optional().describe('idUsuario da outra parte da negociação'),
   }),
   handler: async ({ usuario, query }) => {
     await expirarOfertasVencidas()

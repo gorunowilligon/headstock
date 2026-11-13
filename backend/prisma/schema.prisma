@@ -13,7 +13,7 @@ datasource db {
 /// Usuario (abstrata) + UsuarioComum + Administrador, mapeados em tabela única.
 /// tipo = "comum" (UsuarioComum) | "administrador" (Administrador).
 model Usuario {
-  idUsuario      String   @id @default(uuid())
+  idUsuario      Int   @id @default(autoincrement())
   tipo           String   @default("comum")
   nome           String
   email          String   @unique
@@ -52,7 +52,7 @@ model Usuario {
 /// Registros com noCatalogo = true formam o catálogo mestre (RF14).
 /// Cada anúncio tem sua própria cópia (1:1), que o vendedor pode editar (RF03) sem alterar o catálogo.
 model Instrumento {
-  idInstrumento  String  @id @default(uuid())
+  idInstrumento  Int  @id @default(autoincrement())
   marca          String
   modelo         String
   categoria      String
@@ -70,7 +70,7 @@ model Instrumento {
 
 /// status = "ativo" | "pausado" | "vendido" | "removido"
 model Anuncio {
-  idAnuncio   String   @id @default(uuid())
+  idAnuncio   Int   @id @default(autoincrement())
   titulo      String
   preco       Decimal  @db.Decimal(12, 2)
   condicao    String
@@ -81,9 +81,9 @@ model Anuncio {
   /// RF08: o vendedor pode recusar propostas de preço no anúncio (fora do diagrama).
   aceitaPropostas Boolean @default(true)
 
-  idVendedor    String
+  idVendedor    Int
   vendedor      Usuario     @relation(fields: [idVendedor], references: [idUsuario])
-  idInstrumento String      @unique
+  idInstrumento Int      @unique
   instrumento   Instrumento @relation(fields: [idInstrumento], references: [idInstrumento])
 
   fotos     FotoAnuncio[]
@@ -101,7 +101,7 @@ model Anuncio {
 /// Composição Anuncio 1 — 3..* FotoAnuncio. A foto é enviada antes (idAnuncio nulo)
 /// e vinculada ao criar/editar o anúncio.
 model FotoAnuncio {
-  idFoto    String   @id @default(uuid())
+  idFoto    Int   @id @default(autoincrement())
   url       String
   tamanhoMB Float    @default(0)
   ordem     Int      @default(0)
@@ -110,9 +110,9 @@ model FotoAnuncio {
   dados     Bytes?
   dataEnvio DateTime @default(now())
 
-  idDono    String
+  idDono    Int
   dono      Usuario  @relation(fields: [idDono], references: [idUsuario], onDelete: Cascade)
-  idAnuncio String?
+  idAnuncio Int?
   anuncio   Anuncio? @relation(fields: [idAnuncio], references: [idAnuncio], onDelete: Cascade)
 
   @@index([idAnuncio, ordem])
@@ -121,8 +121,8 @@ model FotoAnuncio {
 
 /// Associação "favorita" entre UsuarioComum e Anuncio (RF12).
 model Favorito {
-  idUsuario   String
-  idAnuncio   String
+  idUsuario   Int
+  idAnuncio   Int
   dataCriacao DateTime @default(now())
 
   usuario Usuario @relation(fields: [idUsuario], references: [idUsuario], onDelete: Cascade)
@@ -134,7 +134,7 @@ model Favorito {
 /// statusPedido = "pago" | "enviado" | "entregue" | "concluido" | "em_disputa"
 ///              | "devolucao_autorizada" | "reembolsado" | "cancelado"
 model Pedido {
-  idPedido       String   @id @default(uuid())
+  idPedido       Int   @id @default(autoincrement())
   valorTotal     Decimal  @db.Decimal(12, 2)
   taxaPlataforma Decimal  @db.Decimal(12, 2)
   valorFrete     Decimal  @db.Decimal(12, 2)
@@ -154,12 +154,12 @@ model Pedido {
   motivoDisputa    String?
   resolucaoDisputa String?
 
-  idComprador String
+  idComprador Int
   comprador   Usuario @relation(fields: [idComprador], references: [idUsuario])
-  idAnuncio   String
+  idAnuncio   Int
   anuncio     Anuncio @relation(fields: [idAnuncio], references: [idAnuncio])
   /// RF08: proposta aceita usada no checkout (fora do diagrama).
-  idOferta    String? @unique
+  idOferta    Int? @unique
   oferta      Oferta? @relation(fields: [idOferta], references: [idOferta])
 
   avaliacoes Avaliacao[]
@@ -173,7 +173,7 @@ model Pedido {
 /// Quem responde é sempre a outra parte: o vendedor responde ao comprador e vice-versa (contraproposta).
 /// status = "pendente" | "aceita" | "recusada" | "substituida" | "cancelada" | "expirada" | "utilizada"
 model Oferta {
-  idOferta    String   @id @default(uuid())
+  idOferta    Int   @id @default(autoincrement())
   valor       Decimal  @db.Decimal(12, 2)
   status      String   @default("pendente")
   dataCriacao DateTime @default(now())
@@ -181,13 +181,13 @@ model Oferta {
   expiraEm    DateTime
   dataResposta DateTime?
 
-  idAnuncio   String
+  idAnuncio   Int
   anuncio     Anuncio @relation(fields: [idAnuncio], references: [idAnuncio], onDelete: Cascade)
   /// Comprador da negociação (é o autor da primeira proposta).
-  idComprador String
+  idComprador Int
   comprador   Usuario @relation("OfertaComprador", fields: [idComprador], references: [idUsuario])
   /// Quem fez esta proposta: o comprador ou, numa contraproposta, o vendedor.
-  idAutor     String
+  idAutor     Int
   autor       Usuario @relation("OfertaAutor", fields: [idAutor], references: [idUsuario])
 
   pedido Pedido?
@@ -198,29 +198,29 @@ model Oferta {
 
 /// Pedido 1 — 0..2 Avaliacao (uma do vendedor e uma do produto). tipoAvaliacao = "vendedor" | "produto"
 model Avaliacao {
-  idAvaliacao        String   @id @default(uuid())
+  idAvaliacao        Int   @id @default(autoincrement())
   notaEstrelas       Int
   textoJustificativo String
   tipoAvaliacao      String
   dataCriacao        DateTime @default(now())
 
-  idPedido String
+  idPedido Int
   pedido   Pedido @relation(fields: [idPedido], references: [idPedido], onDelete: Cascade)
 
   @@unique([idPedido, tipoAvaliacao])
 }
 
 model Mensagem {
-  idMensagem String   @id @default(uuid())
+  idMensagem Int   @id @default(autoincrement())
   conteudo   String
   dataEnvio  DateTime @default(now())
 
-  idRemetente    String
+  idRemetente    Int
   remetente      Usuario  @relation("MensagemRemetente", fields: [idRemetente], references: [idUsuario])
   // Fora do diagrama: destinatário e anúncio da conversa (RF10)
-  idDestinatario String
+  idDestinatario Int
   destinatario   Usuario  @relation("MensagemDestinatario", fields: [idDestinatario], references: [idUsuario])
-  idAnuncio      String?
+  idAnuncio      Int?
   anuncio        Anuncio? @relation(fields: [idAnuncio], references: [idAnuncio], onDelete: SetNull)
 
   denuncias Denuncia[]
@@ -232,22 +232,22 @@ model Mensagem {
 /// status = "aberta" | "em_analise" | "resolvida" | "descartada"
 /// Alvo (RF13): exatamente um entre idAnuncio, idUsuarioDenunciado e idMensagem.
 model Denuncia {
-  idDenuncia       String   @id @default(uuid())
+  idDenuncia       Int   @id @default(autoincrement())
   motivo           String
   descricaoTextual String
   status           String   @default("aberta")
   dataCriacao      DateTime @default(now())
   resolucao        String?
 
-  idAutor             String
+  idAutor             Int
   autor               Usuario   @relation("DenunciaAutor", fields: [idAutor], references: [idUsuario])
-  idAdministrador     String?
+  idAdministrador     Int?
   administrador       Usuario?  @relation("DenunciaAdministrador", fields: [idAdministrador], references: [idUsuario], onDelete: SetNull)
-  idAnuncio           String?
+  idAnuncio           Int?
   anuncio             Anuncio?  @relation(fields: [idAnuncio], references: [idAnuncio], onDelete: SetNull)
-  idUsuarioDenunciado String?
+  idUsuarioDenunciado Int?
   usuarioDenunciado   Usuario?  @relation("DenunciaUsuario", fields: [idUsuarioDenunciado], references: [idUsuario], onDelete: SetNull)
-  idMensagem          String?
+  idMensagem          Int?
   mensagem            Mensagem? @relation(fields: [idMensagem], references: [idMensagem], onDelete: SetNull)
 
   @@index([status])

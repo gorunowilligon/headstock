@@ -33,7 +33,7 @@ export default function Page() {
   const [abaPerfil, setAbaPerfil] = useState('dados')
   // Conversa a abrir no chat quando o usuário vem de um anúncio.
   const [alvoChat, setAlvoChat] = useState<AlvoConversa | null>(null)
-  const [anuncioSelecionadoId, setAnuncioSelecionadoId] = useState<string | null>(null)
+  const [anuncioSelecionadoId, setAnuncioSelecionadoId] = useState<number | null>(null)
   const [busca, setBusca] = useState('')
   const [filtros, setFiltros] = useState<Filtros>(filtrosVazios)
   const ultimaBusca = useRef(0)
@@ -149,7 +149,7 @@ export default function Page() {
     setCurrentView('home')
   }
 
-  const openDetail = (id: string) => {
+  const openDetail = (id: number) => {
     setAnuncioSelecionadoId(id)
     setPreviousView(currentView)
     setCurrentView('detail')
@@ -157,7 +157,7 @@ export default function Page() {
 
   // ---- Ações -------------------------------------------------------------------
 
-  const toggleFavorite = async (id: string) => {
+  const toggleFavorite = async (id: number) => {
     if (!usuario) return pedirLogin(currentView)
     const jaFavorito = favoritos.includes(id)
     const anuncio = [...catalogo, ...meusAnuncios].find((a) => a.idAnuncio === id)
@@ -170,7 +170,7 @@ export default function Page() {
     }
   }
 
-  const togglePause = async (id: string) => {
+  const togglePause = async (id: number) => {
     const anuncio = meusAnuncios.find((a) => a.idAnuncio === id)
     if (!anuncio) return
     try {
@@ -189,7 +189,7 @@ export default function Page() {
     avisar('sucesso', 'Anúncio publicado.')
   }
 
-  const updateListing = async (id: string, dados: EdicaoAnuncio) => {
+  const updateListing = async (id: number, dados: EdicaoAnuncio) => {
     await api(`/anuncios/${id}`, { method: 'PATCH', body: dados })
     await recarregarTudo()
     irParaPerfil('anuncios')
@@ -200,12 +200,12 @@ export default function Page() {
     await api('/denuncias', { method: 'POST', body: denuncia })
   }
 
-  const editListing = (id: string) => {
+  const editListing = (id: number) => {
     setAnuncioSelecionadoId(id)
     setCurrentView('edit')
   }
 
-  const deleteListing = async (id: string) => {
+  const deleteListing = async (id: number) => {
     try {
       await api(`/anuncios/${id}`, { method: 'DELETE' })
       await recarregarTudo()

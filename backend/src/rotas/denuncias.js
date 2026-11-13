@@ -2,6 +2,7 @@ import { z } from 'zod'
 import { prisma } from '../db.js'
 import { HttpError, naoEncontrado } from '../http/erros.js'
 import { criarRouter } from '../http/rota.js'
+import { idNumerico } from '../http/ids.js'
 import { serializarDenuncia } from '../http/serializar.js'
 
 const rotas = criarRouter('/denuncias', 'Denúncias')
@@ -14,9 +15,9 @@ rotas.post('/', {
   body: z.object({
     motivo: z.string().trim().min(3).max(100),
     descricaoTextual: z.string().trim().min(5, 'Descreva o problema').max(2000),
-    idAnuncio: z.string().min(1).optional(),
-    idUsuarioDenunciado: z.string().min(1).optional(),
-    idMensagem: z.string().min(1).optional(),
+    idAnuncio: idNumerico.optional(),
+    idUsuarioDenunciado: idNumerico.optional(),
+    idMensagem: idNumerico.optional(),
   }).refine(
     (d) => [d.idAnuncio, d.idUsuarioDenunciado, d.idMensagem].filter(Boolean).length === 1,
     { message: 'Informe exatamente um alvo: idAnuncio, idUsuarioDenunciado ou idMensagem', path: ['idAnuncio'] },

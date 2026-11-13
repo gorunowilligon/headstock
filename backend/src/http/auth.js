@@ -4,7 +4,7 @@ import { prisma } from '../db.js'
 import { HttpError } from './erros.js'
 
 export function gerarToken(usuario) {
-  return jwt.sign({ tipo: usuario.tipo }, config.jwtSecret, { subject: usuario.idUsuario, expiresIn: config.jwtExpiraEm })
+  return jwt.sign({ tipo: usuario.tipo }, config.jwtSecret, { subject: String(usuario.idUsuario), expiresIn: config.jwtExpiraEm })
 }
 
 async function carregarUsuario(req) {
@@ -18,7 +18,9 @@ async function carregarUsuario(req) {
     throw new HttpError(401, 'Sessão inválida ou expirada. Faça login novamente.')
   }
 
-  const usuario = await prisma.usuario.findUnique({ where: { idUsuario: payload.sub } })
+  const idUsuario = Number(payload.sub)
+  if (!Number.isInteger(idUsuario)) throw new HttpError(401, 'Sessão inválida ou expirada. Faça login novamente.')
+  const usuario = await prisma.usuario.findUnique({ where: { idUsuario } })
   if (!usuario) throw new HttpError(401, 'Usuário não encontrado')
   if (usuario.banido) throw new HttpError(403, 'Esta conta foi banida pela moderação')
   return usuario

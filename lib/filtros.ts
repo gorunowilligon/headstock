@@ -29,7 +29,7 @@ export const opcoesOrdenacao: { valor: Ordenacao, rotulo: string }[] = [
 ]
 
 // Categorias do escopo inicial (seção 2.4 dos requisitos) e condições aceitas pelo formulário de venda.
-export const categoriasDoFiltro = ['Guitarras', 'Baixos', 'Violões', 'Pedais/Efeitos']
+export const categoriasDoFiltro = ['Guitarras', 'Baixos', 'Violões', 'Amplificadores', 'Pedais/Efeitos', 'Acessórios']
 export const condicoesDoFiltro = ['Novo', 'Seminovo', 'Usado']
 
 /** Quantidade de filtros ativos (a ordenação não conta). */

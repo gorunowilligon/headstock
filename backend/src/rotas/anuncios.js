@@ -2,13 +2,14 @@ import { z } from 'zod'
 import { prisma } from '../db.js'
 import { HttpError, naoEncontrado } from '../http/erros.js'
 import { criarRouter } from '../http/rota.js'
+import { idNumerico } from '../http/ids.js'
 import { anuncioInclude, serializarAnuncio } from '../http/serializar.js'
 import { MAX_FOTOS, MIN_FOTOS } from '../regras.js'
 import { instrumentoBase } from './instrumentos.js'
 
 const rotas = criarRouter('/anuncios', 'Anúncios')
 
-const listaDeFotos = z.array(z.string().min(1))
+const listaDeFotos = z.array(idNumerico)
   .min(MIN_FOTOS, `Envie no mínimo ${MIN_FOTOS} fotos do item (RF02)`)
   .max(MAX_FOTOS, `Envie no máximo ${MAX_FOTOS} fotos`)
   .refine((ids) => new Set(ids).size === ids.length, 'A lista de fotos tem itens repetidos')
@@ -149,7 +150,7 @@ rotas.post('/', {
   auth: 'usuario',
   status: 201,
   body: z.object({
-    idInstrumentoCatalogo: z.string().optional(),
+    idInstrumentoCatalogo: idNumerico.optional(),
     instrumento: instrumentoBase.optional(),
     ...camposAnuncio,
     fotos: listaDeFotos,

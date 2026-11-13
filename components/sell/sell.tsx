@@ -57,7 +57,7 @@ export function Sell({ catalogoMestre, localizacaoPadrao, onPublish }: { catalog
             especificacoes: lerEspecificacoes(data, categoriaSelecionada),
           },
         }
-      : { ...dadosBase, idInstrumentoCatalogo: campo('catalogo') }
+      : { ...dadosBase, idInstrumentoCatalogo: Number(campo('catalogo')) }
 
     setEnviando(true)
     setErroEnvio('')

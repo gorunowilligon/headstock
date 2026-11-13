@@ -1,3 +1,9 @@
+-- Headstock | Parte 1 de N: ESTRUTURA (10 tabelas, indices e chaves estrangeiras)
+-- Cole no Supabase: SQL Editor > New query > Run. Rode UMA vez, em banco vazio.
+-- Gerado a partir de prisma/migrations/20261113162011_init/migration.sql
+
+BEGIN;
+
 -- CreateTable
 CREATE TABLE "Usuario" (
     "idUsuario" TEXT NOT NULL,
@@ -272,3 +278,5 @@ ALTER TABLE "Denuncia" ADD CONSTRAINT "Denuncia_idUsuarioDenunciado_fkey" FOREIG
 
 -- AddForeignKey
 ALTER TABLE "Denuncia" ADD CONSTRAINT "Denuncia_idMensagem_fkey" FOREIGN KEY ("idMensagem") REFERENCES "Mensagem"("idMensagem") ON DELETE SET NULL ON UPDATE CASCADE;
+
+COMMIT;

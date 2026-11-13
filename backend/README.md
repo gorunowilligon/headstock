@@ -95,7 +95,15 @@ Fluxo de um pedido: `pago` → `enviado` (rastreio) → `entregue` (confirmaçã
 
 1. Crie um projeto na Vercel apontando para este repositório com **Root Directory = `backend`**.
 2. Defina as variáveis `DATABASE_URL` (PostgreSQL com pooling, como Neon ou Supabase), `JWT_SECRET`, `PUBLIC_URL` e `CORS_ORIGINS` (a URL do frontend).
-3. As migrações são aplicadas automaticamente no build da Vercel (script `vercel-build`, que roda `prisma migrate deploy`). Para aplicar manualmente: `npx prisma migrate deploy`. As migrações precisam de conexão direta: se `DATABASE_URL` usar pooling (PgBouncer), rode `DATABASE_URL=<url direta> npx prisma migrate deploy` uma vez a partir da sua máquina.
+3. O banco do Supabase foi criado pelos scripts de `backend/sql/` (veja abaixo), então o build da Vercel só gera o cliente Prisma (`vercel-build` = `prisma generate`) e **não** roda migrações: `prisma migrate deploy` falharia, pois as tabelas já existem.
+
+### Banco de dados
+
+Todas as chaves primárias são **números inteiros auto-incrementados** (`idUsuario`, `idAnuncio`...). Só `Pedido.idTransacao` é texto (código do gateway de pagamento).
+
+- **Desenvolvimento local:** `npm run db:migrate` cria as tabelas a partir de `prisma/schema.prisma`.
+- **Supabase (produção):** rode os scripts de `backend/sql/` no SQL Editor, nesta ordem: `01-estrutura`, `02-usuarios`, `03-instrumentos`, `04-ids-numericos`, `03c-ids-numericos-restante`. Os dois últimos convertem os ids de texto para número; o resultado é igual ao do schema atual.
+- Se um dia quiser usar `prisma migrate` nesse mesmo banco, registre a migração inicial como já aplicada: `npx prisma migrate resolve --applied 20261113190000_init`.
 
 Limitações da Vercel:
 

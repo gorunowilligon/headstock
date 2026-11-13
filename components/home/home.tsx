@@ -17,9 +17,9 @@ export function Home({ catalogo, carregando, erro, busca, filtros, onFiltrosChan
   filtros: Filtros
   onFiltrosChange: (filtros: Filtros) => void
   instrumentos: Instrumento[]
-  onOpen: (id: string) => void
-  favoritos: string[]
-  onToggleFavorite: (id: string) => void
+  onOpen: (id: number) => void
+  favoritos: number[]
+  onToggleFavorite: (id: number) => void
 }) {
   const [filtrosAbertos, setFiltrosAbertos] = useState(false)
   const ativos = contarFiltros(filtros)

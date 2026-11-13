@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import { autenticar } from './auth.js'
 import { HttpError } from './erros.js'
+import { converterParametros } from './ids.js'
 
 /** Toda rota registrada aqui alimenta também a documentação OpenAPI (RNF11). */
 export const rotasDocumentadas = []
@@ -34,7 +35,7 @@ export function criarRouter(prefixo, tag) {
         req,
         res,
         usuario: req.usuario ?? null,
-        params: req.params,
+        params: converterParametros(req.params),
         body: body ? validar(body, req.body ?? {}) : req.body,
         query: query ? validar(query, req.query) : req.query,
       })

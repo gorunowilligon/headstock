@@ -37,6 +37,9 @@ export const rotulosEspecificacoes: Record<string, string> = {
   bypass: 'Bypass',
   // Acessório
   tipoAcessorio: 'Tipo de acessório',
+  calibreCordas: 'Calibre das cordas',
+  materialCordas: 'Material das cordas',
+  revestimento: 'Revestimento',
 }
 
 const camposNumericos = new Set(['anoFabricacao', 'potenciaWatts'])

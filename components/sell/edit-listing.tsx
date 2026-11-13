@@ -15,7 +15,7 @@ import { MIN_FOTOS, mensagemFotosInsuficientes } from '@/lib/photos'
 const condicoes = ['Novo', 'Seminovo', 'Usado · Excelente', 'Usado · Muito bom', 'Usado · Bom', 'Usado · Regular']
 const inputClass = 'mt-2 w-full rounded-lg border bg-white px-3 py-3 font-normal'
 
-export function EditListing({ anuncio, onSave, onCancel }: { anuncio: Anuncio, onSave: (idAnuncio: string, dados: EdicaoAnuncio) => Promise<void>, onCancel: () => void }) {
+export function EditListing({ anuncio, onSave, onCancel }: { anuncio: Anuncio, onSave: (idAnuncio: number, dados: EdicaoAnuncio) => Promise<void>, onCancel: () => void }) {
   const [enviando, setEnviando] = useState(false)
   const [erroEnvio, setErroEnvio] = useState('')
   const [fotos, setFotos] = useState<FotoAnuncio[]>(anuncio.fotos)

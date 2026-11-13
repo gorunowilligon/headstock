@@ -25,7 +25,7 @@ export function gerarOpenApi() {
 
   for (const rota of rotasDocumentadas) {
     const parametros = [...rota.caminho.matchAll(/:(\w+)/g)].map(([, nome]) => ({
-      name: nome, in: 'path', required: true, schema: { type: 'string' },
+      name: nome, in: 'path', required: true, schema: { type: nome.startsWith('id') ? 'integer' : 'string' },
     }))
     if (rota.query) {
       const schema = paraJsonSchema(rota.query)

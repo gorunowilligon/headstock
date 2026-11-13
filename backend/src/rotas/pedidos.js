@@ -2,6 +2,7 @@ import { z } from 'zod'
 import { prisma } from '../db.js'
 import { HttpError, naoEncontrado } from '../http/erros.js'
 import { criarRouter } from '../http/rota.js'
+import { idNumerico } from '../http/ids.js'
 import { pedidoInclude, serializarAvaliacao, serializarPedido } from '../http/serializar.js'
 import { DIAS_UTEIS_PARA_RASTREIO, HORAS_PARA_DISPUTA, TAXA_PLATAFORMA, arredondar, somarDiasUteis, somarHoras } from '../regras.js'
 import { cotarFrete } from '../services/frete.js'
@@ -24,7 +25,7 @@ export const rotasFrete = criarRouter('/frete', 'Pedidos')
 
 rotasFrete.post('/cotacao', {
   resumo: 'Cotar frete de um anúncio (RNF07, sandbox)',
-  body: z.object({ idAnuncio: z.string().min(1), cepDestino: cep }),
+  body: z.object({ idAnuncio: idNumerico, cepDestino: cep }),
   handler: async ({ body }) => {
     const anuncio = await anuncioAVenda(body.idAnuncio)
     return cotarFrete({ cepDestino: body.cepDestino, categoria: anuncio.instrumento.categoria })
@@ -42,10 +43,10 @@ rotas.post('/', {
   auth: 'usuario',
   status: 201,
   body: z.object({
-    idAnuncio: z.string().min(1),
+    idAnuncio: idNumerico,
     metodoPagamento: z.enum(['cartao', 'pix']),
     cepDestino: cep,
-    idOferta: z.string().min(1).optional().describe('Proposta aceita (RF08): o produto sai pelo valor da proposta'),
+    idOferta: idNumerico.optional().describe('Proposta aceita (RF08): o produto sai pelo valor da proposta'),
   }),
   handler: async ({ usuario, body }) => {
     const anuncio = await anuncioAVenda(body.idAnuncio)
