@@ -10,6 +10,7 @@ import { Chat } from '@/components/chat/chat'
 import { Profile } from '@/components/profile/profile'
 import { Favorites } from '@/components/favorites/favorites'
 import { usePersistentState } from '@/hooks/use-persistent-state'
+import { filtrosVazios, type FiltrosBusca } from '@/lib/busca'
 import { anuncios, usuarioLogado } from '@/lib/mock-data'
 import type { Anuncio } from '@/lib/models'
 
@@ -19,6 +20,7 @@ export default function Page() {
   const [anuncioSelecionadoId, setAnuncioSelecionadoId] = useState<string | null>(null)
   const [anuncioEmEdicaoId, setAnuncioEmEdicaoId] = useState<string | null>(null)
   const [abaPerfil, setAbaPerfil] = useState('dados')
+  const [filtros, setFiltros] = useState<FiltrosBusca>(filtrosVazios)
   const [catalogo, setCatalogo] = usePersistentState<Anuncio[]>('headstock:v2:catalogo', anuncios)
   const [favoritos, setFavoritos] = usePersistentState<string[]>('headstock:v2:favoritos', [])
 
@@ -30,6 +32,12 @@ export default function Page() {
   const navigate = (view: string) => {
     if (view === 'profile') setAbaPerfil('dados')
     setCurrentView(view)
+  }
+
+  // Ao digitar na busca do cabeçalho, mostra os resultados na tela inicial.
+  const alterarTermo = (termo: string) => {
+    setFiltros((prev) => ({ ...prev, termo }))
+    setCurrentView('home')
   }
 
   const toggleFavorite = (id: string) => {
@@ -81,12 +89,12 @@ export default function Page() {
     if (currentView === 'chat') return <Chat />
     if (currentView === 'profile') return <Profile key={abaPerfil} meusAnuncios={meusAnuncios} abaInicial={abaPerfil} onEditListing={editListing} onTogglePause={togglePause} onDeleteListing={deleteListing} />
     if (currentView === 'favorites') return <Favorites catalogo={catalogoAtivo} onOpen={openDetail} onBrowse={() => setCurrentView('home')} favoritos={favoritos} onToggleFavorite={toggleFavorite} />
-    return <Home catalogo={catalogoAtivo} onOpen={openDetail} favoritos={favoritos} onToggleFavorite={toggleFavorite} />
+    return <Home catalogo={catalogoAtivo} filtros={filtros} onFiltrosChange={setFiltros} onLimparFiltros={() => setFiltros(filtrosVazios)} onOpen={openDetail} favoritos={favoritos} onToggleFavorite={toggleFavorite} />
   }
 
   return (
     <div className="min-h-screen bg-white text-gray-950">
-      <Header onNavigate={navigate} />
+      <Header onNavigate={navigate} termo={filtros.termo} onTermoChange={alterarTermo} />
       {renderView()}
       <Footer />
     </div>
