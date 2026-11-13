@@ -1,0 +1,15 @@
+# PostgreSQL local para desenvolvimento: docker compose up -d
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: headstock
+    ports:
+      - "5432:5432"
+    volumes:
+      - headstock-pg:/var/lib/postgresql/data
+
+volumes:
+  headstock-pg:
