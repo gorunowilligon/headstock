@@ -4,7 +4,9 @@
 import { config } from '../config.js'
 import { HORAS_LIBERACAO_PAGAMENTO, HORAS_PARA_DISPUTA, arredondar, somarHoras } from '../regras.js'
 
-const urlAbsoluta = (url) => (url.startsWith('/') ? `${config.urlPublica}${url}` : url)
+// Fotos enviadas pelo app ("/fotos/<id>") são servidas por esta API, então ganham o endereço dela.
+// Outros caminhos relativos (ex.: "/instrumentos/strat-1.jpg") são arquivos do frontend e ficam como estão.
+const urlAbsoluta = (url) => (url.startsWith('/fotos/') ? `${config.urlPublica}${url}` : url)
 
 // Nunca selecionar a coluna "dados" (bytes da imagem) em listagens.
 export const fotoSelect = { idFoto: true, url: true, tamanhoMB: true }
