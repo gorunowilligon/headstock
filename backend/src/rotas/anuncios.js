@@ -19,6 +19,7 @@ const camposAnuncio = {
   preco: z.number().positive().max(10_000_000),
   localizacao: z.string().trim().min(2).max(120),
   descricao: z.string().trim().max(5000).optional(),
+  aceitaPropostas: z.boolean().optional().describe('RF08: se o anúncio aceita propostas de preço (padrão: true)'),
 }
 
 const lista = (valor) => (valor ?? '').split(',').map((item) => item.trim()).filter(Boolean)
@@ -177,6 +178,7 @@ rotas.post('/', {
           condicao: body.condicao,
           localizacao: body.localizacao,
           descricao: body.descricao,
+          aceitaPropostas: body.aceitaPropostas,
           vendedor: { connect: { idUsuario: usuario.idUsuario } },
           instrumento: { create: dadosInstrumento },
         },
@@ -198,6 +200,7 @@ rotas.patch('/:id', {
     preco: camposAnuncio.preco.optional(),
     localizacao: camposAnuncio.localizacao.optional(),
     descricao: camposAnuncio.descricao,
+    aceitaPropostas: camposAnuncio.aceitaPropostas,
     instrumento: instrumentoBase.partial().optional(),
     fotos: listaDeFotos.optional(),
   }),
@@ -220,8 +223,13 @@ rotas.patch('/:id', {
           preco: body.preco,
           localizacao: body.localizacao,
           descricao: body.descricao,
+          aceitaPropostas: body.aceitaPropostas,
         },
       })
+      // Propostas antigas deixam de valer quando o preço muda ou o vendedor desativa as propostas.
+      if (body.aceitaPropostas === false || (body.preco !== undefined && body.preco !== Number(atual.preco))) {
+        await tx.oferta.updateMany({ where: { idAnuncio: atual.idAnuncio, status: { in: ['pendente', 'aceita'] } }, data: { status: 'cancelada' } })
+      }
       if (body.fotos) await definirFotos(tx, atual.idAnuncio, usuario.idUsuario, body.fotos)
       return buscarCompleto(atual.idAnuncio, tx)
     })

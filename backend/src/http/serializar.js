@@ -64,6 +64,7 @@ export const serializarAnuncio = (a) => ({
   idVendedor: a.idVendedor,
   localizacao: a.localizacao,
   descricao: a.descricao || undefined,
+  aceitaPropostas: a.aceitaPropostas,
   instrumento: serializarInstrumento(a.instrumento),
   fotos: a.fotos.map(serializarFoto),
   vendedor: a.vendedor ? serializarUsuarioPublico(a.vendedor) : undefined,
@@ -108,11 +109,26 @@ export function serializarPedido(p) {
     resolucaoDisputa: p.resolucaoDisputa,
     idComprador: p.idComprador,
     idAnuncio: p.idAnuncio,
+    idOferta: p.idOferta ?? null,
     anuncio: p.anuncio ? serializarAnuncio(p.anuncio) : undefined,
     comprador: p.comprador ? serializarUsuarioPublico(p.comprador) : undefined,
     avaliacoes: p.avaliacoes ? p.avaliacoes.map(serializarAvaliacao) : undefined,
   }
 }
+
+export const serializarOferta = (o) => ({
+  idOferta: o.idOferta,
+  valor: Number(o.valor),
+  status: o.status,
+  dataCriacao: o.dataCriacao,
+  expiraEm: o.expiraEm,
+  dataResposta: o.dataResposta,
+  idAnuncio: o.idAnuncio,
+  idComprador: o.idComprador,
+  idAutor: o.idAutor,
+  idVendedor: o.anuncio?.idVendedor,
+  anuncio: o.anuncio ? { idAnuncio: o.anuncio.idAnuncio, titulo: o.anuncio.titulo, preco: Number(o.anuncio.preco), status: o.anuncio.status } : undefined,
+})
 
 export const serializarMensagem = (m) => ({
   idMensagem: m.idMensagem,

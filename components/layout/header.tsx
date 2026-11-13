@@ -1,15 +1,22 @@
 'use client'
 
 import { useState, type FormEvent } from 'react'
-import { Guitar, Heart, LogIn, Menu, MessageCircle, Plus, Search, UserRound } from 'lucide-react'
+import { Guitar, Heart, LogIn, Menu, MessageCircle, Plus, Search, UserRound, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 export function Header({ onNavigate, onSearch, logado }: { onNavigate: (view: string) => void, onSearch: (texto: string) => void, logado: boolean }) {
   const [texto, setTexto] = useState('')
+  const [menuAberto, setMenuAberto] = useState(false)
 
   const handleSearch = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
+    setMenuAberto(false)
     onSearch(texto.trim())
+  }
+
+  const ir = (view: string) => {
+    setMenuAberto(false)
+    onNavigate(view)
   }
 
   return (
@@ -32,9 +39,18 @@ export function Header({ onNavigate, onSearch, logado }: { onNavigate: (view: st
           {logado
             ? <Button variant="ghost" size="icon" onClick={() => onNavigate('profile')} aria-label="Perfil"><UserRound /></Button>
             : <Button variant="outline" onClick={() => onNavigate('login')} className="gap-2"><LogIn /> Entrar</Button>}
-          <Button variant="ghost" size="icon" className="md:hidden" aria-label="Abrir menu"><Menu /></Button>
+          <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setMenuAberto((aberto) => !aberto)} aria-label={menuAberto ? 'Fechar menu' : 'Abrir menu'} aria-expanded={menuAberto} aria-controls="menu-movel">{menuAberto ? <X /> : <Menu />}</Button>
         </nav>
       </div>
+      {menuAberto && (
+        <div id="menu-movel" className="flex flex-col gap-3 border-t px-5 py-4 md:hidden">
+          <form onSubmit={handleSearch} role="search" className="flex items-center rounded-xl border bg-gray-50 px-4 py-2.5">
+            <Search className="mr-3 text-gray-400" />
+            <input value={texto} onChange={(e) => setTexto(e.target.value)} className="w-full bg-transparent text-sm outline-none" placeholder="O que você está procurando?" aria-label="Buscar anúncios" />
+          </form>
+          <Button onClick={() => ir('sell')} className="gap-2 bg-red-600 hover:bg-red-700"><Plus /> Criar anúncio</Button>
+        </div>
+      )}
     </header>
   )
 }

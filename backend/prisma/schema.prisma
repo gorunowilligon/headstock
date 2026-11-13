@@ -39,6 +39,8 @@ model Usuario {
   anuncios            Anuncio[]
   favoritos           Favorito[]
   pedidos             Pedido[]
+  ofertasComoComprador Oferta[] @relation("OfertaComprador")
+  ofertasFeitas        Oferta[] @relation("OfertaAutor")
   fotosEnviadas       FotoAnuncio[]
   mensagensEnviadas   Mensagem[] @relation("MensagemRemetente")
   mensagensRecebidas  Mensagem[] @relation("MensagemDestinatario")
@@ -76,6 +78,8 @@ model Anuncio {
   dataCriacao DateTime @default(now())
   localizacao String
   descricao   String?
+  /// RF08: o vendedor pode recusar propostas de preço no anúncio (fora do diagrama).
+  aceitaPropostas Boolean @default(true)
 
   idVendedor    String
   vendedor      Usuario     @relation(fields: [idVendedor], references: [idUsuario])
@@ -87,6 +91,7 @@ model Anuncio {
   pedidos   Pedido[]
   mensagens Mensagem[]
   denuncias Denuncia[]
+  ofertas   Oferta[]
 
   @@index([status, dataCriacao])
   @@index([status, preco])
@@ -153,12 +158,42 @@ model Pedido {
   comprador   Usuario @relation(fields: [idComprador], references: [idUsuario])
   idAnuncio   String
   anuncio     Anuncio @relation(fields: [idAnuncio], references: [idAnuncio])
+  /// RF08: proposta aceita usada no checkout (fora do diagrama).
+  idOferta    String? @unique
+  oferta      Oferta? @relation(fields: [idOferta], references: [idOferta])
 
   avaliacoes Avaliacao[]
 
   @@index([idComprador])
   @@index([idAnuncio])
   @@index([statusPedido])
+}
+
+/// Proposta de preço (RF08) entre um comprador e o vendedor de um anúncio (fora do diagrama).
+/// Quem responde é sempre a outra parte: o vendedor responde ao comprador e vice-versa (contraproposta).
+/// status = "pendente" | "aceita" | "recusada" | "substituida" | "cancelada" | "expirada" | "utilizada"
+model Oferta {
+  idOferta    String   @id @default(uuid())
+  valor       Decimal  @db.Decimal(12, 2)
+  status      String   @default("pendente")
+  dataCriacao DateTime @default(now())
+  /// Propostas pendentes expiram em 24h; aceitas, 24h após o aceite.
+  expiraEm    DateTime
+  dataResposta DateTime?
+
+  idAnuncio   String
+  anuncio     Anuncio @relation(fields: [idAnuncio], references: [idAnuncio], onDelete: Cascade)
+  /// Comprador da negociação (é o autor da primeira proposta).
+  idComprador String
+  comprador   Usuario @relation("OfertaComprador", fields: [idComprador], references: [idUsuario])
+  /// Quem fez esta proposta: o comprador ou, numa contraproposta, o vendedor.
+  idAutor     String
+  autor       Usuario @relation("OfertaAutor", fields: [idAutor], references: [idUsuario])
+
+  pedido Pedido?
+
+  @@index([idAnuncio, idComprador])
+  @@index([status, expiraEm])
 }
 
 /// Pedido 1 — 0..2 Avaliacao (uma do vendedor e uma do produto). tipoAvaliacao = "vendedor" | "produto"

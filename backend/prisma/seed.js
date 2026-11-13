@@ -49,6 +49,7 @@ async function main() {
     prisma.denuncia.deleteMany(),
     prisma.mensagem.deleteMany(),
     prisma.pedido.deleteMany(),
+    prisma.oferta.deleteMany(),
     prisma.favorito.deleteMany(),
     prisma.fotoAnuncio.deleteMany(),
     prisma.anuncio.deleteMany(),

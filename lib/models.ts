@@ -54,6 +54,7 @@ export interface NovoAnuncio {
   preco: number
   localizacao: string
   descricao?: string
+  aceitaPropostas: boolean
   fotos: string[]
 }
 
@@ -63,7 +64,8 @@ export interface EdicaoAnuncio {
   preco: number
   localizacao: string
   descricao: string
-  instrumento: Pick<Instrumento, 'marca' | 'modelo' | 'tipoCaptacao' | 'numeroCordas' | 'orientacao'>
+  aceitaPropostas: boolean
+  instrumento: Omit<Instrumento, 'idInstrumento'>
   fotos: string[]
 }
 
@@ -93,6 +95,7 @@ export interface Anuncio {
   fotos: FotoAnuncio[]
   localizacao: string // não consta no diagrama
   descricao?: string // não consta no diagrama
+  aceitaPropostas: boolean // não consta no diagrama (RF08)
   vendedor?: UsuarioPublico // preenchido pela API
 }
 
@@ -105,16 +108,50 @@ export interface Denuncia {
   idAnuncio: string // não consta no diagrama
 }
 
+export type StatusPedido = 'pago' | 'enviado' | 'entregue' | 'concluido' | 'em_disputa' | 'devolucao_autorizada' | 'reembolsado' | 'cancelado'
+
 export interface Pedido {
   idPedido: string
   valorTotal: number
+  valorProduto: number
   taxaPlataforma: number
   valorFrete: number
-  codigoRastreio: string
-  statusPedido: string
+  valorRepasseVendedor: number
+  metodoPagamento: 'cartao' | 'pix'
+  cepDestino: string
+  codigoRastreio: string | null
+  statusPedido: StatusPedido
   dataCriacao: string
+  prazoRastreio: string | null
+  rastreioAtrasado: boolean
+  dataEntrega: string | null
+  prazoDisputaAte: string | null
+  liberacaoPagamentoEm: string | null
+  motivoDisputa: string | null
+  resolucaoDisputa: string | null
   idComprador: string
   idAnuncio: string
+  idOferta: string | null
+  anuncio?: Anuncio
+  comprador?: UsuarioPublico
+  avaliacoes?: Avaliacao[]
+}
+
+export interface Frete {
+  valor: number
+  prazoDias: number
+  servico: string
+  simulado: boolean
+}
+
+export interface Recibo {
+  numero: string
+  emitidoEm: string
+  anuncio: { idAnuncio: string, titulo: string }
+  valorProduto: number
+  percentualTaxa: number
+  taxaPlataforma: number
+  valorRepasseVendedor: number
 }
 
 export interface Mensagem {
@@ -122,6 +159,32 @@ export interface Mensagem {
   conteudo: string
   dataEnvio: string
   idRemetente: string
+  idDestinatario: string
+  idAnuncio: string | null
+}
+
+/** Item de GET /mensagens/conversas. */
+export interface Conversa {
+  com: { idUsuario: string, nome: string }
+  anuncio: { idAnuncio: string, titulo: string } | null
+  ultimaMensagem?: Mensagem
+}
+
+export type StatusOferta = 'pendente' | 'aceita' | 'recusada' | 'substituida' | 'cancelada' | 'expirada' | 'utilizada'
+
+/** Proposta de preço (RF08). Não consta no diagrama. */
+export interface Oferta {
+  idOferta: string
+  valor: number
+  status: StatusOferta
+  dataCriacao: string
+  expiraEm: string
+  dataResposta: string | null
+  idAnuncio: string
+  idComprador: string
+  idAutor: string
+  idVendedor: string
+  anuncio?: { idAnuncio: string, titulo: string, preco: number, status: StatusAnuncio }
 }
 
 export interface Avaliacao {

@@ -14,6 +14,7 @@ import { AuthForm } from '@/components/auth/auth-form'
 import { useSessao } from '@/hooks/use-session'
 import { api, mensagemDeErro } from '@/lib/api'
 import { filtrosVazios, paraQuery, type Filtros } from '@/lib/filtros'
+import type { AlvoConversa } from '@/components/detail/detail'
 import type { Anuncio, EdicaoAnuncio, Instrumento, NovaDenuncia, NovoAnuncio, UsuarioSessao } from '@/lib/models'
 
 // RF07: estas telas exigem login (ou cadastro).
@@ -28,7 +29,10 @@ export default function Page() {
   const [currentView, setCurrentView] = useState('home')
   const [previousView, setPreviousView] = useState('home')
   const [destinoLogin, setDestinoLogin] = useState('home')
-  const [voltarParaAnuncios, setVoltarParaAnuncios] = useState(false)
+  // Aba do perfil a abrir na próxima visita (ex.: "anuncios" ao sair da edição, "compras" após comprar).
+  const [abaPerfil, setAbaPerfil] = useState('dados')
+  // Conversa a abrir no chat quando o usuário vem de um anúncio.
+  const [alvoChat, setAlvoChat] = useState<AlvoConversa | null>(null)
   const [anuncioSelecionadoId, setAnuncioSelecionadoId] = useState<string | null>(null)
   const [busca, setBusca] = useState('')
   const [filtros, setFiltros] = useState<Filtros>(filtrosVazios)
@@ -106,9 +110,28 @@ export default function Page() {
   }
 
   const navegar = (view: string) => {
-    setVoltarParaAnuncios(false)
+    setAbaPerfil('dados')
+    setAlvoChat(null)
     if (telasComLogin.includes(view) && !usuario) return pedirLogin(view)
     setCurrentView(view)
+  }
+
+  const irParaPerfil = (aba: string) => {
+    setAbaPerfil(aba)
+    setCurrentView('profile')
+  }
+
+  const abrirConversa = (alvo: AlvoConversa) => {
+    setAlvoChat(alvo)
+    setCurrentView('chat')
+  }
+
+  // Depois do checkout: o anúncio sai do catálogo e o pedido aparece em "Minhas compras".
+  const aposComprar = () => {
+    recarregarTudo().catch(avisarErro)
+    setAlvoChat(null)
+    irParaPerfil('compras')
+    avisar('sucesso', 'Compra realizada. Acompanhe o pedido em Minhas compras.')
   }
 
   // Sessão expirada ou encerrada em uma tela que exige login: volta para o login.
@@ -169,8 +192,7 @@ export default function Page() {
   const updateListing = async (id: string, dados: EdicaoAnuncio) => {
     await api(`/anuncios/${id}`, { method: 'PATCH', body: dados })
     await recarregarTudo()
-    setVoltarParaAnuncios(true)
-    setCurrentView('profile')
+    irParaPerfil('anuncios')
     avisar('sucesso', 'Anúncio atualizado.')
   }
 
@@ -200,15 +222,15 @@ export default function Page() {
 
   const renderView = () => {
     if (currentView === 'login') return <AuthForm entrar={sessao.entrar} cadastrar={sessao.cadastrar} onSucesso={() => setCurrentView(destinoLogin === 'login' ? 'home' : destinoLogin)} motivo={destinoLogin !== 'home' ? 'Entre ou crie uma conta para continuar.' : undefined} />
-    if (currentView === 'detail' && anuncioSelecionado) return <Detail key={anuncioSelecionado.idAnuncio} anuncio={anuncioSelecionado} logado={Boolean(usuario)} onBack={() => setCurrentView(previousView)} onReport={submitReport} onRequireLogin={() => pedirLogin('detail')} />
+    if (currentView === 'detail' && anuncioSelecionado) return <Detail key={anuncioSelecionado.idAnuncio} anuncio={anuncioSelecionado} idUsuarioLogado={usuario?.idUsuario ?? null} onBack={() => setCurrentView(previousView)} onReport={submitReport} onRequireLogin={() => pedirLogin('detail')} onComprado={aposComprar} onConversar={abrirConversa} />
     if (!usuario) {
       if (currentView === 'home' || currentView === 'detail') return renderHome()
       return null // aguardando o redirecionamento para o login
     }
     if (currentView === 'sell') return <Sell catalogoMestre={catalogoMestre} localizacaoPadrao={usuario.enderecoCompleto} onPublish={publishListing} />
-    if (currentView === 'edit' && anuncioSelecionado) return <EditListing key={anuncioSelecionado.idAnuncio} anuncio={anuncioSelecionado} onSave={updateListing} onCancel={() => { setVoltarParaAnuncios(true); setCurrentView('profile') }} />
-    if (currentView === 'chat') return <Chat />
-    if (currentView === 'profile') return <Profile key={voltarParaAnuncios ? 'anuncios' : 'dados'} abaInicial={voltarParaAnuncios ? 'anuncios' : 'dados'} usuario={usuario} meusAnuncios={meusAnuncios.filter((anuncio) => anuncio.status !== 'removido')} onSalvarPerfil={salvarPerfil} onSair={sair} onEditListing={editListing} onTogglePause={togglePause} onDeleteListing={deleteListing} />
+    if (currentView === 'edit' && anuncioSelecionado) return <EditListing key={anuncioSelecionado.idAnuncio} anuncio={anuncioSelecionado} onSave={updateListing} onCancel={() => irParaPerfil('anuncios')} />
+    if (currentView === 'chat') return <Chat key={alvoChat ? `${alvoChat.com.idUsuario}:${alvoChat.anuncio?.idAnuncio}` : 'chat'} idUsuario={usuario.idUsuario} alvoInicial={alvoChat} onComprado={aposComprar} />
+    if (currentView === 'profile') return <Profile key={abaPerfil} abaInicial={abaPerfil} usuario={usuario} meusAnuncios={meusAnuncios.filter((anuncio) => anuncio.status !== 'removido')} onSalvarPerfil={salvarPerfil} onSair={sair} onEditListing={editListing} onTogglePause={togglePause} onDeleteListing={deleteListing} />
     if (currentView === 'favorites') return <Favorites catalogo={favoritosAnuncios} onOpen={openDetail} onBrowse={() => setCurrentView('home')} favoritos={favoritos} onToggleFavorite={toggleFavorite} />
     return renderHome()
   }

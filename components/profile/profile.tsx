@@ -4,10 +4,20 @@ import { useState, type FormEvent } from 'react'
 import { LogOut, Star } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ListingRow } from '@/components/profile/listing-row'
+import { Pedidos } from '@/components/profile/pedidos'
 import { mensagemDeErro } from '@/lib/api'
 import type { Anuncio, UsuarioSessao } from '@/lib/models'
 
 type CamposPerfil = { nome?: string, enderecoCompleto?: string, chavePix?: string }
+
+const titulosDasAbas: Record<string, string> = {
+  dados: 'Dados pessoais',
+  anuncios: 'Meus anúncios',
+  compras: 'Minhas compras',
+  vendas: 'Minhas vendas',
+  endereco: 'Endereço de entrega',
+  financeiro: 'Financeiro e pagamentos',
+}
 
 export function Profile({ usuario, meusAnuncios, abaInicial = 'dados', onSalvarPerfil, onSair, onEditListing, onTogglePause, onDeleteListing }: {
   usuario: UsuarioSessao
@@ -63,13 +73,15 @@ export function Profile({ usuario, meusAnuncios, abaInicial = 'dados', onSalvarP
       </div>
       <div className="grid gap-8 lg:grid-cols-[220px_1fr]">
         <nav className="flex gap-2 overflow-auto lg:flex-col">
-          {[['dados', 'Meus dados'], ['anuncios', 'Meus anúncios'], ['endereco', 'Endereços'], ['financeiro', 'Financeiro']].map(([key, label]) => (
+          {[['dados', 'Meus dados'], ['anuncios', 'Meus anúncios'], ['compras', 'Minhas compras'], ['vendas', 'Minhas vendas'], ['endereco', 'Endereços'], ['financeiro', 'Financeiro']].map(([key, label]) => (
             <button key={key} onClick={() => mudarAba(key)} className={`whitespace-nowrap rounded-lg px-4 py-3 text-left text-sm font-semibold ${tab === key ? 'bg-red-50 text-red-600' : 'text-gray-500 hover:bg-gray-50'}`}>{label}</button>
           ))}
         </nav>
         <section className="max-w-2xl rounded-2xl border bg-white p-6">
-          <h2 className="text-xl font-bold">{tab === 'dados' ? 'Dados pessoais' : tab === 'anuncios' ? 'Meus anúncios' : tab === 'endereco' ? 'Endereço de entrega' : 'Financeiro e pagamentos'}</h2>
-          {tab === 'anuncios' ? (
+          <h2 className="text-xl font-bold">{titulosDasAbas[tab] ?? 'Financeiro e pagamentos'}</h2>
+          {tab === 'compras' || tab === 'vendas' ? (
+            <Pedidos key={tab} papel={tab === 'compras' ? 'comprador' : 'vendedor'} />
+          ) : tab === 'anuncios' ? (
             <div className="mt-6 flex flex-col gap-3">
               {meusAnuncios.map((anuncio) => (
                 <ListingRow

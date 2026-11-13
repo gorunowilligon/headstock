@@ -7,6 +7,7 @@ import { GlobalSpecFields } from '@/components/sell/global-spec-fields'
 import { PhotoUploader } from '@/components/sell/photo-uploader'
 import { mensagemDeErro } from '@/lib/api'
 import { categorias, type Categoria } from '@/lib/categories'
+import { lerEspecificacoes } from '@/lib/especificacoes'
 import type { FotoAnuncio, Instrumento, NovoAnuncio } from '@/lib/models'
 import { MIN_FOTOS, mensagemFotosInsuficientes } from '@/lib/photos'
 
@@ -39,6 +40,8 @@ export function Sell({ catalogoMestre, localizacaoPadrao, onPublish }: { catalog
       condicao: campo('condicao'),
       preco: value,
       localizacao: campo('localizacao'),
+      descricao: campo('descricao') || undefined,
+      aceitaPropostas: data.get('aceitaPropostas') === 'on',
       fotos: fotos.map((foto) => foto.idFoto),
     }
     const anuncio: NovoAnuncio = preencherManual
@@ -51,6 +54,7 @@ export function Sell({ catalogoMestre, localizacaoPadrao, onPublish }: { catalog
             tipoCaptacao: campo('tipoCaptacao'),
             numeroCordas: Number(campo('numeroCordas')) || 0,
             orientacao: campo('orientacao'),
+            especificacoes: lerEspecificacoes(data, categoriaSelecionada),
           },
         }
       : { ...dadosBase, idInstrumentoCatalogo: campo('catalogo') }
@@ -129,9 +133,13 @@ export function Sell({ catalogoMestre, localizacaoPadrao, onPublish }: { catalog
                 Localização do item
                 <input name="localizacao" defaultValue={localizacaoPadrao} required minLength={2} placeholder="Ex.: São Paulo, SP" className="mt-2 w-full rounded-lg border bg-white px-3 py-3 font-normal" />
               </label>
+              <label className="mt-5 block text-sm font-semibold">
+                Descrição
+                <textarea name="descricao" rows={4} maxLength={5000} placeholder="Estado de conservação, regulagem, acessórios que acompanham..." className="mt-2 w-full resize-none rounded-lg border bg-white px-3 py-3 font-normal" />
+              </label>
               <label className="mt-5 flex items-center justify-between border-t pt-5 text-sm font-semibold">
                 Aceitar propostas de preço
-                <input type="checkbox" defaultChecked />
+                <input type="checkbox" name="aceitaPropostas" defaultChecked />
               </label>
             </section>
           </div>

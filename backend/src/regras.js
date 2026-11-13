@@ -5,6 +5,7 @@ export const HORAS_LIBERACAO_PAGAMENTO = 48      // RN02
 export const DIAS_UTEIS_PARA_RASTREIO = 3        // RN03
 export const HORAS_PARA_DISPUTA = 48             // RN04
 export const REPUTACAO_MINIMA = 2                // RN07
+export const HORAS_VALIDADE_OFERTA = 24          // RF08: propostas pendentes e aceitas valem 24h
 export const MIN_FOTOS = 3                       // RF02
 export const MAX_FOTOS = 20
 export const LIMITE_FOTO_MB = 5                  // RNF08 / RN08

@@ -7,6 +7,7 @@ import { DIAS_UTEIS_PARA_RASTREIO, HORAS_PARA_DISPUTA, TAXA_PLATAFORMA, arredond
 import { cotarFrete } from '../services/frete.js'
 import { processarPagamento } from '../services/pagamento.js'
 import { buscarPedido, exigirStatus, liberarPagamentosVencidos } from '../services/pedidos.js'
+import { expirarOfertasVencidas } from './ofertas.js'
 import { recalcularReputacao } from '../services/reputacao.js'
 
 const cep = z.string().trim().regex(/^\d{5}-?\d{3}$/, 'CEP inválido (formato 00000-000)')
@@ -44,13 +45,22 @@ rotas.post('/', {
     idAnuncio: z.string().min(1),
     metodoPagamento: z.enum(['cartao', 'pix']),
     cepDestino: cep,
+    idOferta: z.string().min(1).optional().describe('Proposta aceita (RF08): o produto sai pelo valor da proposta'),
   }),
   handler: async ({ usuario, body }) => {
     const anuncio = await anuncioAVenda(body.idAnuncio)
     if (anuncio.idVendedor === usuario.idUsuario) throw new HttpError(400, 'Você não pode comprar o próprio anúncio')
 
+    let oferta = null
+    if (body.idOferta) {
+      await expirarOfertasVencidas()
+      oferta = await prisma.oferta.findUnique({ where: { idOferta: body.idOferta } })
+      if (!oferta || oferta.idComprador !== usuario.idUsuario || oferta.idAnuncio !== anuncio.idAnuncio) throw naoEncontrado('Proposta')
+      if (oferta.status !== 'aceita') throw new HttpError(409, `A proposta não pode ser usada (status: "${oferta.status}")`)
+    }
+
     const frete = cotarFrete({ cepDestino: body.cepDestino, categoria: anuncio.instrumento.categoria })
-    const valorProduto = Number(anuncio.preco)
+    const valorProduto = Number(oferta ? oferta.valor : anuncio.preco)
     const valorTotal = arredondar(valorProduto + frete.valor)
     const pagamento = processarPagamento({ metodo: body.metodoPagamento, valor: valorTotal })
     const agora = new Date()
@@ -62,6 +72,13 @@ rotas.post('/', {
         data: { status: 'vendido' },
       })
       if (!count) throw new HttpError(409, 'Este anúncio acabou de ser vendido')
+
+      if (oferta) {
+        const usada = await tx.oferta.updateMany({ where: { idOferta: oferta.idOferta, status: 'aceita' }, data: { status: 'utilizada' } })
+        if (!usada.count) throw new HttpError(409, 'A proposta deixou de valer')
+      }
+      // As demais propostas do anúncio deixam de valer com a venda.
+      await tx.oferta.updateMany({ where: { idAnuncio: anuncio.idAnuncio, status: { in: ['pendente', 'aceita'] } }, data: { status: 'cancelada' } })
 
       return tx.pedido.create({
         data: {
@@ -76,6 +93,7 @@ rotas.post('/', {
           prazoRastreio: somarDiasUteis(agora, DIAS_UTEIS_PARA_RASTREIO),
           idComprador: usuario.idUsuario,
           idAnuncio: anuncio.idAnuncio,
+          idOferta: oferta?.idOferta,
         },
         include: pedidoInclude,
       })

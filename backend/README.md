@@ -63,6 +63,7 @@ api/index.js           entrada da função serverless na Vercel
 | RF05 excluir, pausar e editar | `DELETE /anuncios/{id}`, `POST /anuncios/{id}/pausar` e `/reativar`, `PATCH /anuncios/{id}` |
 | RF06 busca com filtros | `GET /anuncios?q=&marca=&categoria=&tipoCaptacao=&condicao=&precoMin=&precoMax=&localizacao=&ordenar=` (marca, categoria, tipoCaptacao e condicao aceitam vários valores separados por vírgula) |
 | RF07 login obrigatório | Middleware `autenticar` (401 sem token) |
+| RF08 propostas de preço | `POST /ofertas`, `GET /ofertas`, `POST /ofertas/{id}/aceitar`, `/recusar` e `/contraproposta`; a proposta aceita vale 24h e é usada em `POST /pedidos` (`idOferta`) |
 | RF09 checkout e frete | `POST /frete/cotacao`, `POST /pedidos` |
 | RF10 chat | `POST /mensagens`, `GET /mensagens/conversas`, `GET /mensagens?com=` |
 | RF11 avaliações | `POST /pedidos/{id}/avaliacoes`, `GET /usuarios/{id}/avaliacoes` |
@@ -83,9 +84,9 @@ api/index.js           entrada da função serverless na Vercel
 
 Fluxo de um pedido: `pago` → `enviado` (rastreio) → `entregue` (confirmação do comprador) → `concluido` (após 48h). A partir de `entregue`, o comprador pode abrir disputa (`em_disputa`). O administrador resolve com `cancelado`, `devolucao_autorizada`, `reembolsado` ou `concluido`.
 
-## Pendências conhecidas
+## Decisões e limitações
 
-- **RF08 / RN05 / RN06 (propostas de preço)** não têm classe no diagrama e ainda não foram implementados. O próximo passo seria criar uma classe `Oferta` (valor, status, expiraEm, comprador, anúncio).
+- **RF08 (propostas de preço)** não tem classe no diagrama; foi criada a classe `Oferta` (valor, status, expiraEm, comprador, autor, anúncio). Propostas pendentes e aceitas expiram em 24h. O vendedor pode desativar propostas no anúncio (`aceitaPropostas`).
 - **RN04 (segunda linha, "Lojas Profissionais")** contradiz a seção 2.4 (somente C2C) e foi ignorada.
 - **Pagamento, Pix e frete** funcionam em sandbox, como permite a seção 2.4. Para integrar de verdade, troque `src/services/pagamento.js` e `src/services/frete.js`.
 - **E-mail** (recuperação de senha, recibo) é simulado: fora de produção, o token volta na resposta.
@@ -94,7 +95,7 @@ Fluxo de um pedido: `pago` → `enviado` (rastreio) → `entregue` (confirmaçã
 
 1. Crie um projeto na Vercel apontando para este repositório com **Root Directory = `backend`**.
 2. Defina as variáveis `DATABASE_URL` (PostgreSQL com pooling, como Neon ou Supabase), `JWT_SECRET`, `PUBLIC_URL` e `CORS_ORIGINS` (a URL do frontend).
-3. Aplique as migrações no banco de produção: `npx prisma migrate deploy`.
+3. As migrações são aplicadas automaticamente no build da Vercel (script `vercel-build`, que roda `prisma migrate deploy`). Para aplicar manualmente: `npx prisma migrate deploy`. As migrações precisam de conexão direta: se `DATABASE_URL` usar pooling (PgBouncer), rode `DATABASE_URL=<url direta> npx prisma migrate deploy` uma vez a partir da sua máquina.
 
 Limitações da Vercel:
 
