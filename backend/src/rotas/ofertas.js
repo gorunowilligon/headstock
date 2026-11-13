@@ -37,7 +37,7 @@ async function ofertaParaResponder(idOferta, usuario) {
   const ehParticipante = [oferta.idComprador, oferta.anuncio.idVendedor].includes(usuario.idUsuario)
   if (!ehParticipante) throw naoEncontrado('Proposta')
   if (oferta.idAutor === usuario.idUsuario) throw new HttpError(403, 'Quem responde à proposta é a outra parte da negociação')
-  if (oferta.status !== 'pendente') throw new HttpError(409, `Esta proposta não está mais pendente (status: "${oferta.status}")`)
+  if (oferta.status !== 'pendente') throw new HttpError(409, 'Esta proposta já foi respondida ou expirou.')
   if (oferta.anuncio.status !== 'ativo') throw new HttpError(409, 'O anúncio não está mais disponível')
   return oferta
 }

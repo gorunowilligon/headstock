@@ -26,11 +26,9 @@ export const metadata: Metadata = {
 }
 
 export const viewport: Viewport = {
-  colorScheme: 'light dark',
-  themeColor: [
-    { media: '(prefers-color-scheme: light)', color: 'white' },
-    { media: '(prefers-color-scheme: dark)', color: 'black' },
-  ],
+  // Só tema claro: as telas usam cores claras fixas, então o modo escuro do sistema não deve ser seguido.
+  colorScheme: 'light',
+  themeColor: 'white',
 }
 
 export default function RootLayout({

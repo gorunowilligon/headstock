@@ -32,11 +32,14 @@ export const opcoesOrdenacao: { valor: Ordenacao, rotulo: string }[] = [
 export const categoriasDoFiltro = ['Guitarras', 'Baixos', 'Violões', 'Amplificadores', 'Pedais/Efeitos', 'Acessórios']
 export const condicoesDoFiltro = ['Novo', 'Seminovo', 'Usado']
 
-/** Quantidade de filtros ativos (a ordenação não conta). */
+/** Quantidade de filtros ativos. Ordenação e seção (categoria) não contam: a seção é uma aba, não um filtro. */
 export function contarFiltros(f: Filtros) {
-  return f.categorias.length + f.marcas.length + f.condicoes.length + f.tiposCaptacao.length
+  return f.marcas.length + f.condicoes.length + f.tiposCaptacao.length
     + (f.precoMin || f.precoMax ? 1 : 0) + (f.localizacao.trim() ? 1 : 0)
 }
+
+/** Limpa os filtros, mantendo a seção aberta e a ordenação. */
+export const limparFiltros = (f: Filtros): Filtros => ({ ...filtrosVazios, categorias: f.categorias, ordenar: f.ordenar })
 
 /** Converte os filtros nos parâmetros de GET /anuncios (valores vazios são ignorados pelo cliente). */
 export function paraQuery(f: Filtros): Record<string, string | undefined> {

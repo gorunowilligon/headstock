@@ -8,6 +8,7 @@ import { capaDoAnuncio } from '@/lib/anuncio'
 import { api, mensagemDeErro } from '@/lib/api'
 import { formatarData, formatarDataHora, formatarMoeda, rotuloStatusPedido } from '@/lib/formatar'
 import type { Avaliacao, Pedido, Recibo } from '@/lib/models'
+import { validarFormulario } from '@/lib/validacao'
 
 type Papel = 'comprador' | 'vendedor'
 
@@ -61,7 +62,15 @@ export function Pedidos({ papel }: { papel: Papel }) {
     }
   }
 
-  if (!pedidos) return <p className="mt-6 text-sm text-gray-500">{erro || 'Carregando...'}</p>
+  if (!pedidos) {
+    if (!erro) return <p className="mt-6 text-sm text-gray-500">Carregando...</p>
+    return (
+      <div className="mt-6 rounded-xl bg-red-50 p-4 text-sm">
+        <p role="alert" className="font-semibold text-red-700">Não foi possível carregar seus pedidos. {erro}</p>
+        <Button size="sm" variant="outline" onClick={() => { setErro(''); carregar() }} className="mt-3">Tentar novamente</Button>
+      </div>
+    )
+  }
 
   return (
     <div className="mt-6 flex flex-col gap-4">
@@ -145,15 +154,19 @@ function AcoesDoPedido({ pedido, papel, executar, abrir, verRecibo }: {
   const avaliou = (tipo: Avaliacao['tipoAvaliacao']) => pedido.avaliacoes?.some((a) => a.tipoAvaliacao === tipo)
   const dentroDoPrazoDeDisputa = pedido.prazoDisputaAte && new Date(pedido.prazoDisputaAte) > new Date()
 
+  const [erroRastreio, setErroRastreio] = useState('')
   const informarRastreio = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
+    const problema = validarFormulario(e.currentTarget)
+    setErroRastreio(problema ?? '')
+    if (problema) return
     executar(() => api(`/pedidos/${pedido.idPedido}/rastreio`, { method: 'POST', body: { codigoRastreio: codigo.trim() } })).catch(() => {})
   }
 
   if (papel === 'vendedor') {
     if (pedido.statusPedido === 'pago') {
       return (
-        <form onSubmit={informarRastreio} className="mt-4 border-t pt-4">
+        <form onSubmit={informarRastreio} noValidate className="mt-4 border-t pt-4">
           <p className={`text-xs font-semibold ${pedido.rastreioAtrasado ? 'text-red-600' : 'text-gray-500'}`}>
             {pedido.rastreioAtrasado ? 'Prazo de envio vencido! ' : ''}Informe o código de rastreio até {pedido.prazoRastreio ? formatarData(pedido.prazoRastreio) : '3 dias úteis após o pagamento'}.
           </p>
@@ -161,6 +174,7 @@ function AcoesDoPedido({ pedido, papel, executar, abrir, verRecibo }: {
             <input value={codigo} onChange={(e) => setCodigo(e.target.value)} minLength={5} maxLength={40} required placeholder="Ex.: BR123456789BR" className="w-full rounded-lg border px-3 py-2 text-sm" aria-label="Código de rastreio" />
             <Button type="submit" size="sm" className="gap-1 bg-red-600 hover:bg-red-700"><Package className="size-4" /> Enviar</Button>
           </div>
+          {erroRastreio && <p role="alert" className="mt-2 text-xs font-semibold text-red-600">{erroRastreio}</p>}
         </form>
       )
     }
@@ -215,6 +229,9 @@ function FormularioTexto({ titulo, icone, explicacao, minimo, rotuloBotao, onEnv
 
   const enviar = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
+    const problema = validarFormulario(e.currentTarget)
+    if (problema) return setErro(problema)
+    setErro('')
     setEnviando(true)
     try {
       await onEnviar(texto.trim())
@@ -226,13 +243,14 @@ function FormularioTexto({ titulo, icone, explicacao, minimo, rotuloBotao, onEnv
 
   return (
     <Modal titulo={titulo} icone={icone} onClose={onClose}>
-      <form onSubmit={enviar}>
+      <form onSubmit={enviar} noValidate>
         <p className="mt-4 text-sm text-gray-600">{explicacao}</p>
-        <textarea value={texto} onChange={(e) => setTexto(e.target.value)} required minLength={minimo} maxLength={2000} rows={4} autoFocus className="mt-3 w-full resize-none rounded-lg border px-3 py-3 text-sm" />
+        <textarea value={texto} onChange={(e) => setTexto(e.target.value)} required minLength={minimo} maxLength={2000} rows={4} autoFocus aria-label="Descrição do problema" className="mt-3 w-full resize-none rounded-lg border px-3 py-3 text-sm" />
+        <p className="mt-1 text-xs text-gray-500">Mínimo de {minimo} caracteres.</p>
         {erro && <p role="alert" className="mt-2 text-sm font-semibold text-red-600">{erro}</p>}
         <div className="mt-5 flex justify-end gap-2">
           <Button type="button" variant="outline" onClick={onClose}>Cancelar</Button>
-          <Button type="submit" disabled={enviando || texto.trim().length < minimo} className="bg-red-600 hover:bg-red-700">{rotuloBotao}</Button>
+          <Button type="submit" disabled={enviando} className="bg-red-600 hover:bg-red-700">{enviando ? 'Enviando...' : rotuloBotao}</Button>
         </div>
       </form>
     </Modal>
@@ -247,6 +265,9 @@ function FormularioAvaliacao({ alvo, onEnviar, onClose }: { alvo: Avaliacao['tip
 
   const enviar = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
+    const problema = validarFormulario(e.currentTarget, nota ? [] : ['Escolha uma nota de 1 a 5 estrelas.'])
+    if (problema) return setErro(problema)
+    setErro('')
     setEnviando(true)
     try {
       await onEnviar(nota, texto.trim())
@@ -258,10 +279,10 @@ function FormularioAvaliacao({ alvo, onEnviar, onClose }: { alvo: Avaliacao['tip
 
   return (
     <Modal titulo={`Avaliar ${alvo}`} icone={<Star className="size-5" />} onClose={onClose}>
-      <form onSubmit={enviar}>
+      <form onSubmit={enviar} noValidate>
         <div className="mt-5 flex gap-1" role="radiogroup" aria-label="Nota">
           {[1, 2, 3, 4, 5].map((i) => (
-            <button key={i} type="button" role="radio" aria-checked={nota === i} aria-label={`${i} estrela${i > 1 ? 's' : ''}`} onClick={() => setNota(i)}>
+            <button key={i} type="button" role="radio" aria-checked={nota === i} aria-label={`${i} estrela${i > 1 ? 's' : ''}`} onClick={() => { setNota(i); setErro('') }}>
               <Star className={`size-8 ${i <= nota ? 'fill-amber-400 text-amber-400' : 'text-gray-300'}`} />
             </button>
           ))}
@@ -273,7 +294,7 @@ function FormularioAvaliacao({ alvo, onEnviar, onClose }: { alvo: Avaliacao['tip
         {erro && <p role="alert" className="mt-2 text-sm font-semibold text-red-600">{erro}</p>}
         <div className="mt-5 flex justify-end gap-2">
           <Button type="button" variant="outline" onClick={onClose}>Cancelar</Button>
-          <Button type="submit" disabled={enviando || !nota || texto.trim().length < 3} className="bg-red-600 hover:bg-red-700">Enviar avaliação</Button>
+          <Button type="submit" disabled={enviando} className="bg-red-600 hover:bg-red-700">{enviando ? 'Enviando...' : 'Enviar avaliação'}</Button>
         </div>
       </form>
     </Modal>

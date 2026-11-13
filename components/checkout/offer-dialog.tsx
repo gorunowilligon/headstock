@@ -5,6 +5,7 @@ import { CircleDollarSign } from 'lucide-react'
 import { Modal } from '@/components/common/modal'
 import { Button } from '@/components/ui/button'
 import { mensagemDeErro } from '@/lib/api'
+import { marcarInvalido } from '@/lib/validacao'
 import { formatarMoeda } from '@/lib/formatar'
 
 /** Formulário de valor usado para propostas e contrapropostas (RF08). */
@@ -23,8 +24,10 @@ export function OfferDialog({ titulo, precoAnuncio, valorAtual, onEnviar, onClos
 
   const enviar = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    if (!(numero > 0)) return setErro('Informe um valor válido.')
-    if (numero >= precoAnuncio) return setErro(`A proposta deve ser menor que o preço do anúncio (${formatarMoeda(precoAnuncio)}).`)
+    const campo = e.currentTarget.valor
+    if (!valor.trim()) { marcarInvalido(campo); return setErro('Informe o valor da sua proposta.') }
+    if (!(numero > 0)) { marcarInvalido(campo); return setErro('Informe um valor maior que zero.') }
+    if (numero >= precoAnuncio) { marcarInvalido(campo); return setErro(`A proposta deve ser menor que o preço do anúncio (${formatarMoeda(precoAnuncio)}).`) }
     setEnviando(true)
     setErro('')
     try {
@@ -37,7 +40,7 @@ export function OfferDialog({ titulo, precoAnuncio, valorAtual, onEnviar, onClos
 
   return (
     <Modal titulo={titulo} icone={<CircleDollarSign className="size-5" />} onClose={onClose}>
-      <form onSubmit={enviar}>
+      <form onSubmit={enviar} noValidate>
         <p className="mt-4 text-sm text-gray-600">
           Preço anunciado: <strong>{formatarMoeda(precoAnuncio)}</strong>
           {valorAtual !== undefined && <> · Proposta atual: <strong>{formatarMoeda(valorAtual)}</strong></>}
@@ -46,7 +49,7 @@ export function OfferDialog({ titulo, precoAnuncio, valorAtual, onEnviar, onClos
           Seu valor
           <div className="mt-2 flex items-center rounded-lg border px-3">
             <span className="text-gray-400">R$</span>
-            <input value={valor} onChange={(e) => setValor(e.target.value)} type="number" min={1} step={0.01} required autoFocus className="w-full px-2 py-3 outline-none" />
+            <input name="valor" value={valor} onChange={(e) => { setValor(e.target.value); setErro('') }} type="number" min={1} step={0.01} required autoFocus className="w-full px-2 py-3 outline-none" />
           </div>
         </label>
         <p className="mt-2 text-xs text-gray-500">A outra parte tem 24h para aceitar, recusar ou responder com outro valor.</p>

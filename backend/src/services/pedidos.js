@@ -37,6 +37,6 @@ export async function buscarPedido(idPedido, usuario, papel = 'participante') {
 
 export function exigirStatus(pedido, ...permitidos) {
   if (!permitidos.includes(pedido.statusPedido)) {
-    throw new HttpError(409, `Ação indisponível para pedidos com status "${pedido.statusPedido}"`)
+    throw new HttpError(409, 'Esta ação não está disponível na etapa atual do pedido. Atualize a página para ver a situação mais recente.')
   }
 }

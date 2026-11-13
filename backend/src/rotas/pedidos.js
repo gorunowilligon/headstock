@@ -57,7 +57,7 @@ rotas.post('/', {
       await expirarOfertasVencidas()
       oferta = await prisma.oferta.findUnique({ where: { idOferta: body.idOferta } })
       if (!oferta || oferta.idComprador !== usuario.idUsuario || oferta.idAnuncio !== anuncio.idAnuncio) throw naoEncontrado('Proposta')
-      if (oferta.status !== 'aceita') throw new HttpError(409, `A proposta não pode ser usada (status: "${oferta.status}")`)
+      if (oferta.status !== 'aceita') throw new HttpError(409, 'Esta proposta não está mais válida para compra.')
     }
 
     const frete = cotarFrete({ cepDestino: body.cepDestino, categoria: anuncio.instrumento.categoria })

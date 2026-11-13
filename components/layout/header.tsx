@@ -21,7 +21,7 @@ export function Header({ onNavigate, onSearch, logado }: { onNavigate: (view: st
 
   return (
     <header className="sticky top-0 z-20 border-b bg-white/95 backdrop-blur">
-      <div className="mx-auto flex h-20 max-w-[1440px] items-center gap-5 px-5 lg:px-10">
+      <div className="mx-auto flex h-20 max-w-[1440px] items-center gap-3 px-4 sm:gap-5 sm:px-5 lg:px-10">
         <button onClick={() => onNavigate('home')} className="flex shrink-0 items-center gap-2" aria-label="Ir para início">
           <span className="grid size-9 place-items-center rounded-xl bg-red-600 text-white"><Guitar /></span>
           <span className="text-2xl font-extrabold tracking-tight text-red-600">headstock</span>
@@ -38,7 +38,8 @@ export function Header({ onNavigate, onSearch, logado }: { onNavigate: (view: st
           <Button onClick={() => onNavigate('sell')} className="hidden gap-2 bg-red-600 hover:bg-red-700 sm:flex"><Plus /> Criar anúncio</Button>
           {logado
             ? <Button variant="ghost" size="icon" onClick={() => onNavigate('profile')} aria-label="Perfil"><UserRound /></Button>
-            : <Button variant="outline" onClick={() => onNavigate('login')} className="gap-2"><LogIn /> Entrar</Button>}
+            // No celular só o ícone (o texto "Entrar" fazia o cabeçalho passar da largura da tela).
+            : <Button variant="outline" onClick={() => onNavigate('login')} className="gap-2 px-2.5 sm:px-3" aria-label="Entrar"><LogIn /> <span className="hidden sm:inline">Entrar</span></Button>}
           <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setMenuAberto((aberto) => !aberto)} aria-label={menuAberto ? 'Fechar menu' : 'Abrir menu'} aria-expanded={menuAberto} aria-controls="menu-movel">{menuAberto ? <X /> : <Menu />}</Button>
         </nav>
       </div>

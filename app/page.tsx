@@ -50,7 +50,8 @@ export default function Page() {
   const anuncioSelecionado = [...catalogo, ...meusAnuncios, ...favoritosAnuncios].find((anuncio) => anuncio.idAnuncio === anuncioSelecionadoId)
 
   const avisar = (tipo: Aviso['tipo'], texto: string) => setAviso({ tipo, texto })
-  const avisarErro = (erro: unknown) => avisar('erro', mensagemDeErro(erro))
+  /** `contexto` diz o que falhou, ex.: "Não foi possível excluir o anúncio." */
+  const avisarErro = (erro: unknown, contexto?: string) => avisar('erro', contexto ? `${contexto} ${mensagemDeErro(erro)}` : mensagemDeErro(erro))
 
   useEffect(() => {
     if (!aviso) return
@@ -97,7 +98,7 @@ export default function Page() {
       setFavoritosAnuncios([])
       return
     }
-    carregarMeusDados().catch(avisarErro)
+    carregarMeusDados().catch((erro) => avisarErro(erro, 'Não foi possível carregar seus anúncios e favoritos.'))
   }, [idUsuario, carregarMeusDados])
 
   const recarregarTudo = () => Promise.all([carregarCatalogo(), carregarMeusDados()])
@@ -128,7 +129,7 @@ export default function Page() {
 
   // Depois do checkout: o anúncio sai do catálogo e o pedido aparece em "Minhas compras".
   const aposComprar = () => {
-    recarregarTudo().catch(avisarErro)
+    recarregarTudo().catch(() => {}) // a compra já foi feita; a lista se atualiza na próxima visita
     setAlvoChat(null)
     irParaPerfil('compras')
     avisar('sucesso', 'Compra realizada. Acompanhe o pedido em Minhas compras.')
@@ -165,7 +166,7 @@ export default function Page() {
     try {
       await api(`/favoritos/${id}`, { method: jaFavorito ? 'DELETE' : 'PUT' })
     } catch (erro) {
-      avisarErro(erro)
+      avisarErro(erro, jaFavorito ? 'Não foi possível remover dos favoritos.' : 'Não foi possível salvar nos favoritos.')
       carregarMeusDados().catch(() => {})
     }
   }
@@ -177,7 +178,7 @@ export default function Page() {
       await api(`/anuncios/${id}/${anuncio.status === 'ativo' ? 'pausar' : 'reativar'}`, { method: 'POST' })
       await recarregarTudo()
     } catch (erro) {
-      avisarErro(erro)
+      avisarErro(erro, anuncio.status === 'ativo' ? 'Não foi possível pausar o anúncio.' : 'Não foi possível reativar o anúncio.')
     }
   }
 
@@ -210,7 +211,7 @@ export default function Page() {
       await api(`/anuncios/${id}`, { method: 'DELETE' })
       await recarregarTudo()
     } catch (erro) {
-      avisarErro(erro)
+      avisarErro(erro, 'Não foi possível excluir o anúncio.')
     }
   }
 
@@ -236,18 +237,25 @@ export default function Page() {
   }
 
   const renderHome = () => (
-    <Home catalogo={catalogo} carregando={carregandoCatalogo} erro={erroCatalogo} busca={busca} filtros={filtros} onFiltrosChange={setFiltros} instrumentos={catalogoMestre} onOpen={openDetail} favoritos={favoritos} onToggleFavorite={toggleFavorite} />
+    <Home catalogo={catalogo} carregando={carregandoCatalogo} erro={erroCatalogo} onTentarNovamente={carregarCatalogo} busca={busca} filtros={filtros} onFiltrosChange={setFiltros} instrumentos={catalogoMestre} onOpen={openDetail} favoritos={favoritos} onToggleFavorite={toggleFavorite} />
   )
 
   return (
-    <div className="min-h-screen bg-white text-gray-950">
+    // Coluna flex: o conteúdo ocupa a altura que sobra e o rodapé fica sempre no fim da tela,
+    // mesmo em páginas curtas (favoritos vazios, abas pequenas do perfil).
+    <div className="flex min-h-screen flex-col bg-white text-gray-950">
       <Header onNavigate={navegar} onSearch={buscar} logado={Boolean(usuario)} />
       {aviso && (
         <div role={aviso.tipo === 'erro' ? 'alert' : 'status'} className={`px-5 py-3 text-center text-sm font-semibold ${aviso.tipo === 'erro' ? 'bg-red-50 text-red-700' : 'bg-green-50 text-green-700'}`}>
           {aviso.texto}
         </div>
       )}
-      {renderView()}
+      {/* [&>main]:flex-1 faz o <main> de cada tela crescer até o rodapé (inclusive o fundo cinza de "Vender").
+          [&>main]:w-full evita que o mx-auto das telas encolha o <main> ao tamanho do conteúdo numa coluna flex;
+          o max-w de cada tela continua limitando e centralizando a largura. */}
+      <div className="flex flex-1 flex-col [&>main]:w-full [&>main]:flex-1">
+        {renderView()}
+      </div>
       <Footer />
     </div>
   )

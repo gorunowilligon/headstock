@@ -13,6 +13,7 @@ import { api, mensagemDeErro } from '@/lib/api'
 import { linhasEspecificacoes } from '@/lib/especificacoes'
 import type { Anuncio, NovaDenuncia, Pedido } from '@/lib/models'
 import { formatarPreco } from '@/lib/price'
+import { validarFormulario } from '@/lib/validacao'
 
 /** Conversa a abrir no chat: a outra pessoa e o anúncio negociado. */
 export interface AlvoConversa {
@@ -43,6 +44,7 @@ export function Detail({ anuncio, idUsuarioLogado, onBack, onReport, onRequireLo
   const [motivo, setMotivo] = useState('')
   const [descricaoTextual, setDescricaoTextual] = useState('')
   const [reportSent, setReportSent] = useState(false)
+  const [enviandoDenuncia, setEnviandoDenuncia] = useState(false)
   const photos = anuncio.fotos.length ? anuncio.fotos.map((foto) => foto.url) : ['/placeholder.jpg']
   const parcela = anuncio.preco / 10
 
@@ -54,12 +56,17 @@ export function Detail({ anuncio, idUsuarioLogado, onBack, onReport, onRequireLo
 
   const handleReportSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
+    const problema = validarFormulario(e.currentTarget)
+    if (problema) return setErroDenuncia(problema)
     setErroDenuncia('')
+    setEnviandoDenuncia(true)
     try {
-      await onReport({ idAnuncio: anuncio.idAnuncio, motivo, descricaoTextual })
+      await onReport({ idAnuncio: anuncio.idAnuncio, motivo, descricaoTextual: descricaoTextual.trim() })
     } catch (erro) {
       setErroDenuncia(mensagemDeErro(erro))
       return
+    } finally {
+      setEnviandoDenuncia(false)
     }
     setIsReportOpen(false)
     setMotivo('')
@@ -150,7 +157,7 @@ export function Detail({ anuncio, idUsuarioLogado, onBack, onReport, onRequireLo
               <div className="grid size-10 place-items-center rounded-full bg-red-100 font-bold text-red-600">{iniciaisVendedor}</div>
               <div>
                 <p className="text-sm font-semibold">{vendedor.nome}</p>
-                <p className="flex items-center gap-1 text-xs text-gray-500"><Star className="size-3 fill-amber-400 text-amber-400" /> {vendedor.reputacaoMedia.toFixed(1)}</p>
+                <p className="flex items-center gap-1 text-xs text-gray-500"><Star className="size-3 fill-amber-400 text-amber-400" /> {vendedor.reputacaoMedia > 0 ? vendedor.reputacaoMedia.toFixed(1) : 'Sem avaliações'}</p>
               </div>
             </div>
             <div>
@@ -170,7 +177,7 @@ export function Detail({ anuncio, idUsuarioLogado, onBack, onReport, onRequireLo
       {janela === 'oferta' && (
         <OfferDialog titulo="Fazer oferta" precoAnuncio={anuncio.preco} onEnviar={enviarOferta} onClose={() => setJanela(null)} />
       )}
-      <ReportDialog open={isReportOpen} motivo={motivo} onMotivoChange={setMotivo} descricaoTextual={descricaoTextual} onDescricaoTextualChange={setDescricaoTextual} erro={erroDenuncia} onClose={() => setIsReportOpen(false)} onSubmit={handleReportSubmit} />
+      <ReportDialog open={isReportOpen} motivo={motivo} onMotivoChange={setMotivo} descricaoTextual={descricaoTextual} onDescricaoTextualChange={setDescricaoTextual} erro={erroDenuncia} enviando={enviandoDenuncia} onClose={() => setIsReportOpen(false)} onSubmit={handleReportSubmit} />
     </main>
   )
 }

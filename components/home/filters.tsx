@@ -1,14 +1,16 @@
 import { Filter } from '@/components/home/filter'
-import { categoriasDoFiltro, condicoesDoFiltro, contarFiltros, filtrosVazios, type Filtros } from '@/lib/filtros'
+import { condicoesDoFiltro, contarFiltros, limparFiltros, type Filtros } from '@/lib/filtros'
 import type { Instrumento } from '@/lib/models'
 
 const unicos = (valores: string[]) => [...new Set(valores.filter(Boolean))].sort((a, b) => a.localeCompare(b, 'pt-BR'))
 
-type ListaFiltro = 'categorias' | 'marcas' | 'condicoes' | 'tiposCaptacao'
+type ListaFiltro = 'marcas' | 'condicoes' | 'tiposCaptacao'
 
 export function Filters({ filtros, onChange, instrumentos, aberto }: { filtros: Filtros, onChange: (filtros: Filtros) => void, instrumentos: Instrumento[], aberto: boolean }) {
-  const marcas = unicos(instrumentos.map((i) => i.marca))
-  const tiposCaptacao = unicos(instrumentos.map((i) => i.tipoCaptacao))
+  // Marcas e captações oferecidas são as da seção aberta.
+  const daSecao = filtros.categorias.length ? instrumentos.filter((i) => filtros.categorias.includes(i.categoria)) : instrumentos
+  const marcas = unicos(daSecao.map((i) => i.marca))
+  const tiposCaptacao = unicos(daSecao.map((i) => i.tipoCaptacao))
 
   const alternar = (lista: ListaFiltro, valor: string) => {
     const atual = filtros[lista]
@@ -26,9 +28,8 @@ export function Filters({ filtros, onChange, instrumentos, aberto }: { filtros: 
       <div className="sticky top-28 flex flex-col gap-6">
         <div className="flex items-center justify-between">
           <h2 className="font-bold">Filtros</h2>
-          <button onClick={() => onChange({ ...filtrosVazios, ordenar: filtros.ordenar })} disabled={contarFiltros(filtros) === 0} className="text-xs font-semibold text-red-600 disabled:text-gray-300">Limpar tudo</button>
+          <button onClick={() => onChange(limparFiltros(filtros))} disabled={contarFiltros(filtros) === 0} className="text-xs font-semibold text-red-600 disabled:text-gray-300">Limpar tudo</button>
         </div>
-        <Filter title="Categorias">{opcoes('categorias', categoriasDoFiltro)}</Filter>
         {marcas.length > 0 && <Filter title="Marca">{opcoes('marcas', marcas)}</Filter>}
         {tiposCaptacao.length > 0 && <Filter title="Tipo de captação">{opcoes('tiposCaptacao', tiposCaptacao)}</Filter>}
         <Filter title="Condição">{opcoes('condicoes', condicoesDoFiltro)}</Filter>

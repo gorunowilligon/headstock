@@ -16,8 +16,8 @@ export const naoEncontrado = (recurso = 'Recurso') => new HttpError(404, `${recu
 
 const mensagensMulter = {
   LIMIT_FILE_SIZE: `Cada imagem deve ter no máximo ${LIMITE_FOTO_MB} MB (RNF08)`,
-  LIMIT_FILE_COUNT: 'Envie no máximo 10 imagens por requisição',
-  LIMIT_UNEXPECTED_FILE: 'Envie as imagens no campo "fotos"',
+  LIMIT_FILE_COUNT: 'Envie no máximo 10 imagens por vez',
+  LIMIT_UNEXPECTED_FILE: 'Não foi possível enviar as imagens. Tente novamente.',
 }
 
 // Middleware de erro do Express (precisa dos 4 parâmetros).
@@ -30,11 +30,11 @@ export function tratarErros(err, req, res, next) {
     return res.status(err.code === 'LIMIT_FILE_SIZE' ? 413 : 400).json({ erro: mensagensMulter[err.code] ?? err.message })
   }
   if (err instanceof Prisma.PrismaClientKnownRequestError) {
-    if (err.code === 'P2002') return res.status(409).json({ erro: 'Registro duplicado' })
+    if (err.code === 'P2002') return res.status(409).json({ erro: 'Este item já existe' })
     if (err.code === 'P2025') return res.status(404).json({ erro: 'Registro não encontrado' })
   }
   if (err?.type === 'entity.parse.failed') {
-    return res.status(400).json({ erro: 'JSON inválido no corpo da requisição' })
+    return res.status(400).json({ erro: 'Não foi possível ler os dados enviados' })
   }
   console.error(err)
   res.status(500).json({ erro: 'Erro interno do servidor' })

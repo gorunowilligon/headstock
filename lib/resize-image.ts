@@ -1,3 +1,5 @@
+import { ErroAmigavel } from '@/lib/api'
+
 // Reduz a imagem no navegador antes do envio (a Vercel limita cada requisição a 4,5 MB).
 // O servidor ainda a redimensiona de novo (RNF08).
 export function redimensionarImagem(file: File, maxLado = 1200, qualidade = 0.8): Promise<Blob> {
@@ -12,14 +14,14 @@ export function redimensionarImagem(file: File, maxLado = 1200, qualidade = 0.8)
       canvas.getContext('2d')?.drawImage(img, 0, 0, canvas.width, canvas.height)
       URL.revokeObjectURL(url)
       canvas.toBlob(
-        (blob) => blob ? resolve(blob) : reject(new Error(`Não foi possível converter a imagem ${file.name}`)),
+        (blob) => blob ? resolve(blob) : reject(new ErroAmigavel('não foi possível processar esta imagem. Tente outra foto.')),
         'image/jpeg',
         qualidade,
       )
     }
     img.onerror = () => {
       URL.revokeObjectURL(url)
-      reject(new Error(`Não foi possível ler a imagem ${file.name}`))
+      reject(new ErroAmigavel('não foi possível abrir esta imagem. Tente outra foto.'))
     }
     img.src = url
   })

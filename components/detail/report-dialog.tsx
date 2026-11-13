@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button'
 
 const motivos = ['Anúncio falso ou golpe', 'Produto proibido', 'Informações enganosas', 'Conteúdo ofensivo', 'Outro']
 
-export function ReportDialog({ open, motivo, onMotivoChange, descricaoTextual, onDescricaoTextualChange, erro, onClose, onSubmit }: { open: boolean, motivo: string, onMotivoChange: (value: string) => void, descricaoTextual: string, onDescricaoTextualChange: (value: string) => void, erro?: string, onClose: () => void, onSubmit: (e: FormEvent<HTMLFormElement>) => void }) {
+export function ReportDialog({ open, motivo, onMotivoChange, descricaoTextual, onDescricaoTextualChange, erro, enviando, onClose, onSubmit }: { open: boolean, motivo: string, onMotivoChange: (value: string) => void, descricaoTextual: string, onDescricaoTextualChange: (value: string) => void, erro?: string, enviando?: boolean, onClose: () => void, onSubmit: (e: FormEvent<HTMLFormElement>) => void }) {
   if (!open) return null
 
   return (
@@ -13,7 +13,7 @@ export function ReportDialog({ open, motivo, onMotivoChange, descricaoTextual, o
       onMouseDown={(e) => { if (e.target === e.currentTarget) onClose() }}
       onKeyDown={(e) => { if (e.key === 'Escape') onClose() }}
     >
-      <form onSubmit={onSubmit} role="dialog" aria-modal="true" aria-labelledby="report-title" className="w-full max-w-md rounded-2xl border bg-white p-6 shadow-xl">
+      <form onSubmit={onSubmit} noValidate role="dialog" aria-modal="true" aria-labelledby="report-title" className="w-full max-w-md rounded-2xl border bg-white p-6 shadow-xl">
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-center gap-3">
             <span className="grid size-10 place-items-center rounded-full bg-red-100 text-red-600"><Flag className="size-5" /></span>
@@ -34,6 +34,8 @@ export function ReportDialog({ open, motivo, onMotivoChange, descricaoTextual, o
             value={descricaoTextual}
             onChange={(e) => onDescricaoTextualChange(e.target.value)}
             required
+            minLength={5}
+            maxLength={2000}
             rows={4}
             className="mt-2 w-full resize-none rounded-lg border px-3 py-3 font-normal outline-none focus:border-red-600"
             placeholder="Descreva o problema com este anúncio..."
@@ -42,7 +44,7 @@ export function ReportDialog({ open, motivo, onMotivoChange, descricaoTextual, o
         {erro && <p role="alert" className="mt-3 text-sm font-semibold text-red-600">{erro}</p>}
         <div className="mt-6 flex justify-end gap-2">
           <Button type="button" variant="outline" onClick={onClose}>Cancelar</Button>
-          <Button type="submit" disabled={!motivo || !descricaoTextual.trim()} className="bg-red-600 hover:bg-red-700">Enviar Denúncia</Button>
+          <Button type="submit" disabled={enviando} className="bg-red-600 hover:bg-red-700">{enviando ? 'Enviando...' : 'Enviar denúncia'}</Button>
         </div>
       </form>
     </div>

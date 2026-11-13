@@ -109,12 +109,21 @@ export function Chat({ idUsuario, alvoInicial, onComprado }: { idUsuario: number
     }
   }
 
-  const enviarMensagem = (e: FormEvent<HTMLFormElement>) => {
+  const enviarMensagem = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     if (!selecionada || !texto.trim()) return
     const conteudo = texto.trim()
     setTexto('')
-    executar(() => api('/mensagens', { method: 'POST', body: { idDestinatario: selecionada.com.idUsuario, idAnuncio: selecionada.anuncio?.idAnuncio, conteudo } }))
+    setErro('')
+    try {
+      await api('/mensagens', { method: 'POST', body: { idDestinatario: selecionada.com.idUsuario, idAnuncio: selecionada.anuncio?.idAnuncio, conteudo } })
+    } catch (erro) {
+      // Devolve o texto ao campo para o usuário não perder o que escreveu.
+      setTexto((atual) => atual || conteudo)
+      setErro(`Mensagem não enviada. ${mensagemDeErro(erro)}`)
+      return
+    }
+    await atualizar()
   }
 
   const responder = (oferta: Oferta, acao: 'aceitar' | 'recusar') => executar(() => api(`/ofertas/${oferta.idOferta}/${acao}`, { method: 'POST' }))
@@ -150,8 +159,9 @@ export function Chat({ idUsuario, alvoInicial, onComprado }: { idUsuario: number
         <p className="text-sm font-semibold text-red-600">Conecte-se com músicos</p>
         <h1 className="mt-1 text-3xl font-extrabold">Negociações</h1>
       </div>
-      <div className="grid min-h-[620px] overflow-hidden rounded-2xl border bg-white md:grid-cols-[300px_1fr]">
-        <aside className="border-b bg-gray-50 md:border-b-0 md:border-r">
+      {/* minmax(0,1fr): sem isso, no celular a coluna cresce até a largura da mensagem mais longa e o conteúdo é cortado */}
+      <div className="grid min-h-[620px] grid-cols-[minmax(0,1fr)] overflow-hidden rounded-2xl border bg-white md:grid-cols-[300px_minmax(0,1fr)]">
+        <aside className="min-w-0 border-b bg-gray-50 md:border-b-0 md:border-r">
           <div className="border-b p-4">
             <h2 className="font-bold">Conversas</h2>
             <div className="mt-3 flex items-center rounded-lg border bg-white px-3 py-2">
@@ -180,7 +190,7 @@ export function Chat({ idUsuario, alvoInicial, onComprado }: { idUsuario: number
         </aside>
 
         {selecionada ? (
-          <section className="flex min-h-[540px] flex-col">
+          <section className="flex min-h-[540px] min-w-0 flex-col">
             <div className="flex items-center gap-3 border-b p-4">
               <div className="grid size-10 place-items-center rounded-full bg-red-100 font-bold text-red-600">{iniciais(selecionada.com.nome)}</div>
               <div className="min-w-0">

@@ -5,6 +5,7 @@ import { Guitar } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import type { DadosCadastro } from '@/hooks/use-session'
 import { api, mensagemDeErro } from '@/lib/api'
+import { validarFormulario } from '@/lib/validacao'
 
 type Modo = 'login' | 'cadastro' | 'recuperar' | 'redefinir'
 
@@ -34,6 +35,9 @@ export function AuthForm({ entrar, cadastrar, onSucesso, motivo }: {
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
+    setInfo('')
+    const problema = validarFormulario(e.currentTarget)
+    if (problema) return setErro(problema)
     const data = new FormData(e.currentTarget)
     const campo = (nome: string) => String(data.get(nome) ?? '').trim()
     setEnviando(true)
@@ -67,7 +71,7 @@ export function AuthForm({ entrar, cadastrar, onSucesso, motivo }: {
 
   return (
     <main className="grid min-h-[70vh] place-items-center bg-gray-50 px-5 py-10">
-      <form onSubmit={handleSubmit} className="w-full max-w-md rounded-2xl border bg-white p-8 shadow-sm">
+      <form onSubmit={handleSubmit} noValidate className="w-full max-w-md rounded-2xl border bg-white p-8 shadow-sm">
         <div className="mb-6 flex items-center gap-3">
           <span className="grid size-10 place-items-center rounded-xl bg-red-600 text-white"><Guitar /></span>
           <h1 className="text-2xl font-extrabold">{titulos[modo]}</h1>

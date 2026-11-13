@@ -11,6 +11,7 @@ import { categorias, type Categoria } from '@/lib/categories'
 import { categoriaDoInstrumento, lerEspecificacoes, valoresIniciais } from '@/lib/especificacoes'
 import type { Anuncio, EdicaoAnuncio, FotoAnuncio } from '@/lib/models'
 import { MIN_FOTOS, mensagemFotosInsuficientes } from '@/lib/photos'
+import { validarFormulario } from '@/lib/validacao'
 
 const condicoes = ['Novo', 'Seminovo', 'Usado · Excelente', 'Usado · Muito bom', 'Usado · Bom', 'Usado · Regular']
 const inputClass = 'mt-2 w-full rounded-lg border bg-white px-3 py-3 font-normal'
@@ -32,9 +33,12 @@ export function EditListing({ anuncio, onSave, onCancel }: { anuncio: Anuncio, o
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    if (fotos.length < MIN_FOTOS) {
-      setErroFotos(mensagemFotosInsuficientes(fotos.length))
-      document.getElementById('secao-fotos')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    const faltamFotos = fotos.length < MIN_FOTOS
+    setErroFotos(faltamFotos ? mensagemFotosInsuficientes(fotos.length) : '')
+    const problema = validarFormulario(e.currentTarget, faltamFotos ? [mensagemFotosInsuficientes(fotos.length)] : [])
+    if (problema) {
+      setErroEnvio(problema)
+      if (faltamFotos) document.getElementById('secao-fotos')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
       return
     }
     const data = new FormData(e.currentTarget)
@@ -75,7 +79,7 @@ export function EditListing({ anuncio, onSave, onCancel }: { anuncio: Anuncio, o
           <h1 className="mt-1 text-3xl font-extrabold">Editar anúncio</h1>
           <p className="mt-2 text-gray-500">Atualize fotos, especificações, condição ou preço do seu instrumento.</p>
         </div>
-        <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+        <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-6">
           <section id="secao-fotos" className="rounded-2xl border bg-white p-6">
             <h2 className="mb-1 text-lg font-bold">1. Fotos do instrumento</h2>
             <PhotoUploader fotos={fotos} onChange={atualizarFotos} erro={erroFotos} />
@@ -108,7 +112,7 @@ export function EditListing({ anuncio, onSave, onCancel }: { anuncio: Anuncio, o
                 Valor do anúncio
                 <div className="mt-2 flex items-center rounded-lg border px-3">
                   <span className="text-gray-400">R$</span>
-                  <input value={price} onChange={(e) => setPrice(e.target.value)} type="number" min={0.01} step={0.01} required className="w-full px-2 py-3 outline-none" />
+                  <input value={price} onChange={(e) => setPrice(e.target.value)} type="number" min={0.01} max={10000000} step={0.01} required className="w-full px-2 py-3 outline-none" />
                 </div>
               </label>
             </div>

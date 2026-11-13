@@ -243,7 +243,9 @@ const mudarStatus = (de, para, resumo) => ({
   auth: 'usuario',
   handler: async ({ usuario, params }) => {
     const anuncio = await anuncioDoVendedor(params.id, usuario)
-    if (anuncio.status !== de) throw new HttpError(409, `Só é possível fazer isso com anúncios "${de}" (atual: "${anuncio.status}")`)
+    if (anuncio.status !== de) {
+      throw new HttpError(409, anuncio.status === 'vendido' ? 'Este anúncio já foi vendido.' : 'O anúncio mudou de situação. Atualize a página e tente novamente.')
+    }
     await prisma.anuncio.update({ where: { idAnuncio: anuncio.idAnuncio }, data: { status: para } })
     return serializarAnuncio(await buscarCompleto(anuncio.idAnuncio))
   },

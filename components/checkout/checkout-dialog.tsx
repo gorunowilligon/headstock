@@ -5,6 +5,7 @@ import { CheckCircle2, CreditCard, QrCode, ShoppingBag } from 'lucide-react'
 import { Modal } from '@/components/common/modal'
 import { Button } from '@/components/ui/button'
 import { api, mensagemDeErro } from '@/lib/api'
+import { marcarInvalido } from '@/lib/validacao'
 import { formatarMoeda } from '@/lib/formatar'
 import type { Frete, Pedido } from '@/lib/models'
 
@@ -53,6 +54,14 @@ export function CheckoutDialog({ item, oferta, onClose, onConcluido }: {
 
   const cotar = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
+    if (!cep.trim()) {
+      marcarInvalido(e.currentTarget.cep)
+      return setErro('Informe o CEP de entrega para calcular o frete.')
+    }
+    if (!cepValido) {
+      marcarInvalido(e.currentTarget.cep)
+      return setErro('CEP inválido. Use o formato 00000-000.')
+    }
     return executar(async () => {
       setFrete(await api<Frete>('/frete/cotacao', { method: 'POST', body: { idAnuncio: item.idAnuncio, cepDestino: cep.trim() } }))
     })
@@ -95,13 +104,14 @@ export function CheckoutDialog({ item, oferta, onClose, onConcluido }: {
         </div>
       </div>
 
-      <form onSubmit={cotar} className="mt-5">
+      <form onSubmit={cotar} noValidate className="mt-5">
         <label className="block text-sm font-semibold" htmlFor="cep">CEP de entrega</label>
         <div className="mt-2 flex gap-2">
-          <input id="cep" value={cep} onChange={(e) => { setCep(e.target.value); setFrete(null) }} inputMode="numeric" maxLength={9} placeholder="00000-000" required className="w-full rounded-lg border px-3 py-2.5" />
-          <Button type="submit" variant="outline" disabled={!cepValido || carregando}>Calcular frete</Button>
+          <input id="cep" name="cep" value={cep} onChange={(e) => { setCep(e.target.value); setFrete(null); setErro('') }} inputMode="numeric" maxLength={9} placeholder="00000-000" required className="w-full rounded-lg border px-3 py-2.5" />
+          <Button type="submit" variant="outline" disabled={carregando}>Calcular frete</Button>
         </div>
       </form>
+      {!frete && !erro && <p className="mt-2 text-xs text-gray-500">Calcule o frete para escolher a forma de pagamento.</p>}
 
       {frete && (
         <>

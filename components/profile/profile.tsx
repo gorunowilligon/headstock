@@ -7,6 +7,7 @@ import { ListingRow } from '@/components/profile/listing-row'
 import { Pedidos } from '@/components/profile/pedidos'
 import { mensagemDeErro } from '@/lib/api'
 import type { Anuncio, UsuarioSessao } from '@/lib/models'
+import { validarFormulario } from '@/lib/validacao'
 
 type CamposPerfil = { nome?: string, enderecoCompleto?: string, chavePix?: string }
 
@@ -33,16 +34,19 @@ export function Profile({ usuario, meusAnuncios, abaInicial = 'dados', onSalvarP
   const [salvando, setSalvando] = useState(false)
   const [mensagem, setMensagem] = useState<{ tipo: 'erro' | 'sucesso', texto: string } | null>(null)
 
-  const campos: { nome: keyof CamposPerfil | 'email', label: string, valor: string, somenteLeitura?: boolean }[] = tab === 'dados'
-    ? [{ nome: 'nome', label: 'Nome completo', valor: usuario.nome }, { nome: 'email', label: 'E-mail', valor: usuario.email, somenteLeitura: true }]
+  // Mesmos limites da API (PATCH /usuarios/me).
+  const campos: { nome: keyof CamposPerfil | 'email', label: string, valor: string, somenteLeitura?: boolean, obrigatorio?: boolean, minimo?: number, maximo?: number }[] = tab === 'dados'
+    ? [{ nome: 'nome', label: 'Nome completo', valor: usuario.nome, obrigatorio: true, minimo: 2, maximo: 120 }, { nome: 'email', label: 'E-mail', valor: usuario.email, somenteLeitura: true }]
     : tab === 'endereco'
-      ? [{ nome: 'enderecoCompleto', label: 'Endereço completo', valor: usuario.enderecoCompleto }]
-      : [{ nome: 'chavePix', label: 'Chave Pix', valor: usuario.chavePix }]
+      ? [{ nome: 'enderecoCompleto', label: 'Endereço completo', valor: usuario.enderecoCompleto, maximo: 300 }]
+      : [{ nome: 'chavePix', label: 'Chave Pix', valor: usuario.chavePix, maximo: 140 }]
 
   const mudarAba = (nova: string) => { setTab(nova); setMensagem(null) }
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
+    const problema = validarFormulario(e.currentTarget)
+    if (problema) return setMensagem({ tipo: 'erro', texto: problema })
     const data = new FormData(e.currentTarget)
     const alterados: CamposPerfil = {}
     for (const campo of campos) {
@@ -71,13 +75,14 @@ export function Profile({ usuario, meusAnuncios, abaInicial = 'dados', onSalvarP
         </div>
         <Button variant="outline" onClick={onSair} className="gap-2"><LogOut /> Sair</Button>
       </div>
-      <div className="grid gap-8 lg:grid-cols-[220px_1fr]">
+      {/* minmax(0,1fr): no celular, a linha de abas (que rola de lado) não pode alargar a página */}
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-8 lg:grid-cols-[220px_minmax(0,1fr)]">
         <nav className="flex gap-2 overflow-auto lg:flex-col">
           {[['dados', 'Meus dados'], ['anuncios', 'Meus anúncios'], ['compras', 'Minhas compras'], ['vendas', 'Minhas vendas'], ['endereco', 'Endereços'], ['financeiro', 'Financeiro']].map(([key, label]) => (
             <button key={key} onClick={() => mudarAba(key)} className={`whitespace-nowrap rounded-lg px-4 py-3 text-left text-sm font-semibold ${tab === key ? 'bg-red-50 text-red-600' : 'text-gray-500 hover:bg-gray-50'}`}>{label}</button>
           ))}
         </nav>
-        <section className="max-w-2xl rounded-2xl border bg-white p-6">
+        <section className="min-w-0 max-w-2xl rounded-2xl border bg-white p-4 sm:p-6">
           <h2 className="text-xl font-bold">{titulosDasAbas[tab] ?? 'Financeiro e pagamentos'}</h2>
           {tab === 'compras' || tab === 'vendas' ? (
             <Pedidos key={tab} papel={tab === 'compras' ? 'comprador' : 'vendedor'} />
@@ -95,12 +100,12 @@ export function Profile({ usuario, meusAnuncios, abaInicial = 'dados', onSalvarP
               {meusAnuncios.length === 0 && <p className="rounded-xl border-2 border-dashed p-6 text-center text-sm text-gray-500">Você não tem anúncios publicados.</p>}
             </div>
           ) : (
-            <form key={tab} onSubmit={handleSubmit}>
+            <form key={tab} onSubmit={handleSubmit} noValidate>
               <div className="mt-6 grid gap-5 sm:grid-cols-2">
                 {campos.map((campo) => (
                   <label key={campo.nome} className="text-sm font-semibold">
                     {campo.label}
-                    <input name={campo.nome} defaultValue={campo.valor} readOnly={campo.somenteLeitura} className={`mt-2 w-full rounded-lg border px-3 py-3 font-normal ${campo.somenteLeitura ? 'bg-gray-50 text-gray-500' : ''}`} />
+                    <input name={campo.nome} defaultValue={campo.valor} readOnly={campo.somenteLeitura} required={campo.obrigatorio} minLength={campo.minimo} maxLength={campo.maximo} className={`mt-2 w-full rounded-lg border px-3 py-3 font-normal ${campo.somenteLeitura ? 'bg-gray-50 text-gray-500' : ''}`} />
                   </label>
                 ))}
               </div>

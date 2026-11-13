@@ -10,6 +10,7 @@ import { categorias, type Categoria } from '@/lib/categories'
 import { lerEspecificacoes } from '@/lib/especificacoes'
 import type { FotoAnuncio, Instrumento, NovoAnuncio } from '@/lib/models'
 import { MIN_FOTOS, mensagemFotosInsuficientes } from '@/lib/photos'
+import { validarFormulario } from '@/lib/validacao'
 
 export function Sell({ catalogoMestre, localizacaoPadrao, onPublish }: { catalogoMestre: Instrumento[], localizacaoPadrao: string, onPublish: (anuncio: NovoAnuncio) => Promise<void> }) {
   const [enviando, setEnviando] = useState(false)
@@ -28,9 +29,12 @@ export function Sell({ catalogoMestre, localizacaoPadrao, onPublish }: { catalog
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    if (fotos.length < MIN_FOTOS) {
-      setErroFotos(mensagemFotosInsuficientes(fotos.length))
-      document.getElementById('secao-fotos')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    const faltamFotos = fotos.length < MIN_FOTOS
+    setErroFotos(faltamFotos ? mensagemFotosInsuficientes(fotos.length) : '')
+    const problema = validarFormulario(e.currentTarget, faltamFotos ? [mensagemFotosInsuficientes(fotos.length)] : [])
+    if (problema) {
+      setErroEnvio(problema)
+      if (faltamFotos) document.getElementById('secao-fotos')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
       return
     }
     const data = new FormData(e.currentTarget)
@@ -78,7 +82,7 @@ export function Sell({ catalogoMestre, localizacaoPadrao, onPublish }: { catalog
           <h1 className="mt-1 text-3xl font-extrabold">Criar anúncio</h1>
           <p className="mt-2 text-gray-500">Conte a história do seu instrumento e encontre o próximo dono.</p>
         </div>
-        <form onSubmit={handleSubmit} className="grid gap-6 lg:grid-cols-[1fr_320px]">
+        <form onSubmit={handleSubmit} noValidate className="grid gap-6 lg:grid-cols-[1fr_320px]">
           <div className="flex flex-col gap-6">
             <section id="secao-fotos" className="rounded-2xl border bg-white p-6">
               <h2 className="mb-1 text-lg font-bold">1. Fotos do instrumento</h2>
@@ -93,6 +97,9 @@ export function Sell({ catalogoMestre, localizacaoPadrao, onPublish }: { catalog
                   {catalogoMestre.map((i) => <option key={i.idInstrumento} value={i.idInstrumento}>{i.marca} {i.modelo}</option>)}
                 </select>
               </label>
+              {catalogoMestre.length === 0 && !preencherManual && (
+                <p className="-mt-2 mb-4 text-xs text-gray-500">O catálogo não está disponível agora. Marque a opção abaixo para preencher os dados do instrumento.</p>
+              )}
               <label className="flex items-center gap-3 text-sm"><input type="checkbox" checked={preencherManual} onChange={(e) => setPreencherManual(e.target.checked)} /> Modelo não consta no catálogo? Preencha as especificações manualmente</label>
               {preencherManual && (
                 <div className="mt-6 flex flex-col gap-5 border-t pt-6">
@@ -125,7 +132,7 @@ export function Sell({ catalogoMestre, localizacaoPadrao, onPublish }: { catalog
                   Valor do anúncio
                   <div className="mt-2 flex items-center rounded-lg border px-3">
                     <span className="text-gray-400">R$</span>
-                    <input value={price} onChange={(e) => setPrice(e.target.value)} type="number" min={0.01} step={0.01} required className="w-full px-2 py-3 outline-none" placeholder="0,00" />
+                    <input value={price} onChange={(e) => setPrice(e.target.value)} type="number" min={0.01} max={10000000} step={0.01} required className="w-full px-2 py-3 outline-none" placeholder="0,00" />
                   </div>
                 </label>
               </div>

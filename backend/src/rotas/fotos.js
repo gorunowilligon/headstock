@@ -45,7 +45,7 @@ rotas.post('/', {
   antes: [upload.array('fotos', 10)],
   handler: async ({ req, usuario }) => {
     const arquivos = req.files ?? []
-    if (!arquivos.length) throw new HttpError(400, 'Envie ao menos uma imagem no campo "fotos"')
+    if (!arquivos.length) throw new HttpError(400, 'Selecione ao menos uma imagem')
 
     const processadas = await Promise.all(arquivos.map(redimensionar))
     // O id é gerado pelo banco; a URL ("/fotos/<id>") só pode ser montada depois do INSERT.
