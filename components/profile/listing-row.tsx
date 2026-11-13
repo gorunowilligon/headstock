@@ -1,7 +1,7 @@
 import { Pause, Pencil, Play, Trash2 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { capaDoAnuncio } from '@/lib/mock-data'
+import { capaDoAnuncio } from '@/lib/anuncio'
 import type { Anuncio } from '@/lib/models'
 import { formatarPreco } from '@/lib/price'
 

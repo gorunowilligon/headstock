@@ -4,13 +4,16 @@ import { useState, type FormEvent } from 'react'
 import { ArrowLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { PhotoUploader } from '@/components/sell/photo-uploader'
-import type { Anuncio, FotoAnuncio } from '@/lib/models'
+import { mensagemDeErro } from '@/lib/api'
+import type { Anuncio, EdicaoAnuncio, FotoAnuncio } from '@/lib/models'
 import { MIN_FOTOS, mensagemFotosInsuficientes } from '@/lib/photos'
 
 const condicoes = ['Novo', 'Seminovo', 'Usado · Excelente', 'Usado · Muito bom', 'Usado · Bom', 'Usado · Regular']
 const inputClass = 'mt-2 w-full rounded-lg border bg-white px-3 py-3 font-normal'
 
-export function EditListing({ anuncio, onSave, onCancel }: { anuncio: Anuncio, onSave: (anuncio: Anuncio) => void, onCancel: () => void }) {
+export function EditListing({ anuncio, onSave, onCancel }: { anuncio: Anuncio, onSave: (idAnuncio: string, dados: EdicaoAnuncio) => Promise<void>, onCancel: () => void }) {
+  const [enviando, setEnviando] = useState(false)
+  const [erroEnvio, setErroEnvio] = useState('')
   const [fotos, setFotos] = useState<FotoAnuncio[]>(anuncio.fotos)
   const [erroFotos, setErroFotos] = useState('')
   const [price, setPrice] = useState(String(anuncio.preco))
@@ -21,7 +24,7 @@ export function EditListing({ anuncio, onSave, onCancel }: { anuncio: Anuncio, o
     if (novas.length >= MIN_FOTOS) setErroFotos('')
   }
 
-  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     if (fotos.length < MIN_FOTOS) {
       setErroFotos(mensagemFotosInsuficientes(fotos.length))
@@ -30,23 +33,28 @@ export function EditListing({ anuncio, onSave, onCancel }: { anuncio: Anuncio, o
     }
     const data = new FormData(e.currentTarget)
     const campo = (nome: string) => String(data.get(nome) ?? '').trim()
-    const instrumento = {
-      ...anuncio.instrumento,
-      marca: campo('marca'),
-      modelo: campo('modelo'),
-      tipoCaptacao: campo('tipoCaptacao'),
-      numeroCordas: Number(campo('numeroCordas')) || 0,
-      orientacao: campo('orientacao'),
+    setEnviando(true)
+    setErroEnvio('')
+    try {
+      await onSave(anuncio.idAnuncio, {
+        preco: value,
+        condicao: campo('condicao'),
+        localizacao: campo('localizacao'),
+        descricao: campo('descricao'),
+        instrumento: {
+          marca: campo('marca'),
+          modelo: campo('modelo'),
+          tipoCaptacao: campo('tipoCaptacao'),
+          numeroCordas: Number(campo('numeroCordas')) || 0,
+          orientacao: campo('orientacao'),
+        },
+        fotos: fotos.map((foto) => foto.idFoto),
+      })
+    } catch (erro) {
+      setErroEnvio(mensagemDeErro(erro))
+    } finally {
+      setEnviando(false)
     }
-    onSave({
-      ...anuncio,
-      titulo: `${instrumento.marca} ${instrumento.modelo}`,
-      preco: value,
-      condicao: campo('condicao'),
-      descricao: campo('descricao') || undefined,
-      instrumento,
-      fotos,
-    })
   }
 
   return (
@@ -92,11 +100,13 @@ export function EditListing({ anuncio, onSave, onCancel }: { anuncio: Anuncio, o
                 </div>
               </label>
             </div>
+            <label className="mt-5 block text-sm font-semibold">Localização do item<input name="localizacao" defaultValue={anuncio.localizacao} required minLength={2} className={inputClass} /></label>
             <p className="mt-4 text-sm text-gray-500">Você receberá <strong className="text-red-600">R$ {(value * .93).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong> após a taxa de 7%.</p>
           </section>
+          {erroEnvio && <p role="alert" className="text-sm font-semibold text-red-600">{erroEnvio}</p>}
           <div className="flex justify-end gap-2">
             <Button type="button" variant="outline" onClick={onCancel}>Cancelar</Button>
-            <Button type="submit" className="bg-red-600 hover:bg-red-700">Salvar alterações</Button>
+            <Button type="submit" disabled={enviando} className="bg-red-600 hover:bg-red-700">{enviando ? 'Salvando...' : 'Salvar alterações'}</Button>
           </div>
         </form>
       </div>

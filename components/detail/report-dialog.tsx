@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button'
 
 const motivos = ['Anúncio falso ou golpe', 'Produto proibido', 'Informações enganosas', 'Conteúdo ofensivo', 'Outro']
 
-export function ReportDialog({ open, motivo, onMotivoChange, descricaoTextual, onDescricaoTextualChange, onClose, onSubmit }: { open: boolean, motivo: string, onMotivoChange: (value: string) => void, descricaoTextual: string, onDescricaoTextualChange: (value: string) => void, onClose: () => void, onSubmit: (e: FormEvent<HTMLFormElement>) => void }) {
+export function ReportDialog({ open, motivo, onMotivoChange, descricaoTextual, onDescricaoTextualChange, erro, onClose, onSubmit }: { open: boolean, motivo: string, onMotivoChange: (value: string) => void, descricaoTextual: string, onDescricaoTextualChange: (value: string) => void, erro?: string, onClose: () => void, onSubmit: (e: FormEvent<HTMLFormElement>) => void }) {
   if (!open) return null
 
   return (
@@ -39,6 +39,7 @@ export function ReportDialog({ open, motivo, onMotivoChange, descricaoTextual, o
             placeholder="Descreva o problema com este anúncio..."
           />
         </label>
+        {erro && <p role="alert" className="mt-3 text-sm font-semibold text-red-600">{erro}</p>}
         <div className="mt-6 flex justify-end gap-2">
           <Button type="button" variant="outline" onClick={onClose}>Cancelar</Button>
           <Button type="submit" disabled={!motivo || !descricaoTextual.trim()} className="bg-red-600 hover:bg-red-700">Enviar Denúncia</Button>

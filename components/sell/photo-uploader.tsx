@@ -7,19 +7,25 @@ import { LIMITE_FOTO_MB, MIN_FOTOS, processarFotos } from '@/lib/photos'
 
 export function PhotoUploader({ fotos, onChange, erro }: { fotos: FotoAnuncio[], onChange: (fotos: FotoAnuncio[]) => void, erro?: string }) {
   const [errosUpload, setErrosUpload] = useState<string[]>([])
+  const [enviando, setEnviando] = useState(false)
 
   const adicionarFotos = async (files: FileList | null) => {
-    if (!files) return
-    const { fotos: novas, erros } = await processarFotos(Array.from(files))
-    setErrosUpload(erros)
-    if (novas.length) onChange([...fotos, ...novas])
+    if (!files || enviando) return
+    setEnviando(true)
+    try {
+      const { fotos: novas, erros } = await processarFotos(Array.from(files))
+      setErrosUpload(erros)
+      if (novas.length) onChange([...fotos, ...novas])
+    } finally {
+      setEnviando(false)
+    }
   }
 
   const removerFoto = (id: string) => onChange(fotos.filter((foto) => foto.idFoto !== id))
 
   return (
     <div>
-      <p className="mb-5 text-sm text-gray-500">Envie no mínimo {MIN_FOTOS} fotos do item. Limite de {LIMITE_FOTO_MB} MB por imagem (serão redimensionadas).</p>
+      <p className="mb-5 text-sm text-gray-500">Envie no mínimo {MIN_FOTOS} fotos do item. Limite de {LIMITE_FOTO_MB} MB por imagem (serão redimensionadas no servidor).</p>
       <label
         onDragOver={(e) => e.preventDefault()}
         onDrop={(e) => { e.preventDefault(); adicionarFotos(e.dataTransfer.files) }}
@@ -32,7 +38,9 @@ export function PhotoUploader({ fotos, onChange, erro }: { fotos: FotoAnuncio[],
           <p className="mt-1 text-sm text-gray-500">ou <span className="font-semibold text-red-600">selecione os arquivos</span></p>
         </div>
       </label>
-      <p className={`mt-3 text-xs font-semibold ${fotos.length >= MIN_FOTOS ? 'text-green-600' : 'text-gray-500'}`}>{fotos.length} de {MIN_FOTOS} fotos mínimas</p>
+      <p className={`mt-3 text-xs font-semibold ${fotos.length >= MIN_FOTOS ? 'text-green-600' : 'text-gray-500'}`}>
+        {fotos.length} de {MIN_FOTOS} fotos mínimas{enviando && ' · enviando fotos...'}
+      </p>
       {errosUpload.length > 0 && (
         <ul role="alert" className="mt-2 list-disc pl-5 text-xs font-semibold text-red-600">
           {errosUpload.map((mensagem) => <li key={mensagem}>{mensagem}</li>)}

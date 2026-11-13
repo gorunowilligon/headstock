@@ -17,6 +17,24 @@ export interface Administrador extends Usuario {
   nivelAcesso: number
 }
 
+/** Dados públicos de um usuário, como a API devolve dentro de um anúncio. */
+export interface UsuarioPublico {
+  idUsuario: string
+  nome: string
+  reputacaoMedia: number
+  dataCadastro: string
+  suspenso: boolean
+}
+
+/** Usuário logado, como devolvido por /auth e /usuarios/me (nunca inclui a senha). */
+export interface UsuarioSessao extends UsuarioPublico {
+  tipo: 'comum' | 'administrador'
+  email: string
+  chavePix: string
+  enderecoCompleto: string
+  banido: boolean
+}
+
 export interface Instrumento {
   idInstrumento: string
   marca: string
@@ -25,6 +43,34 @@ export interface Instrumento {
   tipoCaptacao: string
   numeroCordas: number
   orientacao: string
+  especificacoes?: Record<string, string | number | boolean>
+}
+
+/** Corpo de POST /anuncios. As fotos são IDs devolvidos por POST /fotos. */
+export interface NovoAnuncio {
+  idInstrumentoCatalogo?: string
+  instrumento?: Omit<Instrumento, 'idInstrumento'>
+  condicao: string
+  preco: number
+  localizacao: string
+  descricao?: string
+  fotos: string[]
+}
+
+/** Corpo de PATCH /anuncios/:id (todos os campos são opcionais na API). */
+export interface EdicaoAnuncio {
+  condicao: string
+  preco: number
+  localizacao: string
+  descricao: string
+  instrumento: Pick<Instrumento, 'marca' | 'modelo' | 'tipoCaptacao' | 'numeroCordas' | 'orientacao'>
+  fotos: string[]
+}
+
+export interface NovaDenuncia {
+  idAnuncio: string
+  motivo: string
+  descricaoTextual: string
 }
 
 export interface FotoAnuncio {
@@ -33,7 +79,7 @@ export interface FotoAnuncio {
   tamanhoMB: number
 }
 
-export type StatusAnuncio = 'ativo' | 'pausado'
+export type StatusAnuncio = 'ativo' | 'pausado' | 'vendido' | 'removido'
 
 export interface Anuncio {
   idAnuncio: string
@@ -47,6 +93,7 @@ export interface Anuncio {
   fotos: FotoAnuncio[]
   localizacao: string // não consta no diagrama
   descricao?: string // não consta no diagrama
+  vendedor?: UsuarioPublico // preenchido pela API
 }
 
 export interface Denuncia {

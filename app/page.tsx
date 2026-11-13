@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Header } from '@/components/layout/header'
 import { Footer } from '@/components/layout/footer'
 import { Home } from '@/components/home/home'
@@ -10,56 +10,120 @@ import { EditListing } from '@/components/sell/edit-listing'
 import { Chat } from '@/components/chat/chat'
 import { Profile } from '@/components/profile/profile'
 import { Favorites } from '@/components/favorites/favorites'
-import { usePersistentState } from '@/hooks/use-persistent-state'
-import { anuncios, usuarioLogado } from '@/lib/mock-data'
-import type { Anuncio, Denuncia } from '@/lib/models'
+import { AuthForm } from '@/components/auth/auth-form'
+import { useSessao } from '@/hooks/use-session'
+import { api, mensagemDeErro } from '@/lib/api'
+import { filtrosVazios, paraQuery, type Filtros } from '@/lib/filtros'
+import type { Anuncio, EdicaoAnuncio, Instrumento, NovaDenuncia, NovoAnuncio, UsuarioSessao } from '@/lib/models'
+
+// RF07: estas telas exigem login (ou cadastro).
+const telasComLogin = ['sell', 'edit', 'chat', 'profile', 'favorites']
+
+type Aviso = { tipo: 'erro' | 'sucesso', texto: string }
 
 export default function Page() {
+  const sessao = useSessao()
+  const { usuario } = sessao
+
   const [currentView, setCurrentView] = useState('home')
   const [previousView, setPreviousView] = useState('home')
+  const [destinoLogin, setDestinoLogin] = useState('home')
   const [voltarParaAnuncios, setVoltarParaAnuncios] = useState(false)
-  const [anuncioSelecionadoId,setAnuncioSelecionadoId] = useState<string | null>(null)
-  const [catalogo, setCatalogo] = usePersistentState<Anuncio[]>('headstock:v2:catalogo', anuncios)
-  const [favoritos, setFavoritos] = usePersistentState<string[]>('headstock:v2:favoritos', [])
-  const [, setDenuncias] = usePersistentState<Denuncia[]>('headstock:v2:denuncias', [])
+  const [anuncioSelecionadoId, setAnuncioSelecionadoId] = useState<string | null>(null)
+  const [busca, setBusca] = useState('')
+  const [filtros, setFiltros] = useState<Filtros>(filtrosVazios)
+  const ultimaBusca = useRef(0)
+  const [aviso, setAviso] = useState<Aviso | null>(null)
 
-  const catalogoAtivo = catalogo.filter((anuncio) => anuncio.status === 'ativo')
-  const meusAnuncios = catalogo.filter((anuncio) => anuncio.idVendedor === usuarioLogado.idUsuario)
-  const anuncioSelecionado = catalogo.find((anuncio) => anuncio.idAnuncio === anuncioSelecionadoId)
+  const [catalogo, setCatalogo] = useState<Anuncio[]>([])
+  const [carregandoCatalogo, setCarregandoCatalogo] = useState(true)
+  const [erroCatalogo, setErroCatalogo] = useState('')
+  const [catalogoMestre, setCatalogoMestre] = useState<Instrumento[]>([])
+  const [meusAnuncios, setMeusAnuncios] = useState<Anuncio[]>([])
+  const [favoritosAnuncios, setFavoritosAnuncios] = useState<Anuncio[]>([])
 
-  const toggleFavorite = (id: string) => {
-    setFavoritos((prev) => prev.includes(id) ? prev.filter((favId) => favId !== id) : [...prev, id])
+  const favoritos = favoritosAnuncios.map((anuncio) => anuncio.idAnuncio)
+  const anuncioSelecionado = [...catalogo, ...meusAnuncios, ...favoritosAnuncios].find((anuncio) => anuncio.idAnuncio === anuncioSelecionadoId)
+
+  const avisar = (tipo: Aviso['tipo'], texto: string) => setAviso({ tipo, texto })
+  const avisarErro = (erro: unknown) => avisar('erro', mensagemDeErro(erro))
+
+  useEffect(() => {
+    if (!aviso) return
+    const timer = setTimeout(() => setAviso(null), 5000)
+    return () => clearTimeout(timer)
+  }, [aviso])
+
+  // ---- Carregamento de dados ----------------------------------------------
+
+  const carregarCatalogo = useCallback(async () => {
+    const numero = ++ultimaBusca.current
+    try {
+      const resposta = await api<{ itens: Anuncio[] }>('/anuncios', { query: { q: busca, porPagina: 100, ...paraQuery(filtros) } })
+      if (numero !== ultimaBusca.current) return // uma busca mais nova já foi disparada
+      setCatalogo(resposta.itens)
+      setErroCatalogo('')
+    } catch (erro) {
+      if (numero === ultimaBusca.current) setErroCatalogo(mensagemDeErro(erro))
+    } finally {
+      if (numero === ultimaBusca.current) setCarregandoCatalogo(false)
+    }
+  }, [busca, filtros])
+
+  const carregarMeusDados = useCallback(async () => {
+    const [meus, favs] = await Promise.all([api<Anuncio[]>('/anuncios/meus'), api<Anuncio[]>('/favoritos')])
+    setMeusAnuncios(meus)
+    setFavoritosAnuncios(favs)
+  }, [])
+
+  // Pequeno atraso para não consultar a API a cada tecla digitada em preço e localização.
+  useEffect(() => {
+    const timer = setTimeout(carregarCatalogo, 300)
+    return () => clearTimeout(timer)
+  }, [carregarCatalogo])
+
+  useEffect(() => {
+    api<Instrumento[]>('/instrumentos').then(setCatalogoMestre).catch(() => {})
+  }, [])
+
+  const idUsuario = usuario?.idUsuario
+  useEffect(() => {
+    if (!idUsuario) {
+      setMeusAnuncios([])
+      setFavoritosAnuncios([])
+      return
+    }
+    carregarMeusDados().catch(avisarErro)
+  }, [idUsuario, carregarMeusDados])
+
+  const recarregarTudo = () => Promise.all([carregarCatalogo(), carregarMeusDados()])
+
+  // ---- Navegação e login ----------------------------------------------------
+
+  const pedirLogin = (destino: string) => {
+    setDestinoLogin(destino)
+    setCurrentView('login')
   }
 
-  const togglePause = (id: string) => {
-    setCatalogo((prev) => prev.map((anuncio) => anuncio.idAnuncio === id
-      ? { ...anuncio, status: anuncio.status === 'ativo' ? 'pausado' : 'ativo' }
-      : anuncio))
+  const navegar = (view: string) => {
+    setVoltarParaAnuncios(false)
+    if (telasComLogin.includes(view) && !usuario) return pedirLogin(view)
+    setCurrentView(view)
   }
 
-  const publishListing = (anuncio: Anuncio) => {
-    setCatalogo((prev) => [anuncio, ...prev])
+  // Sessão expirada ou encerrada em uma tela que exige login: volta para o login.
+  useEffect(() => {
+    if (!sessao.carregando && !usuario && telasComLogin.includes(currentView)) pedirLogin(currentView)
+  }, [sessao.carregando, usuario, currentView])
+
+  const sair = () => {
+    sessao.sair()
     setCurrentView('home')
   }
 
-  const updateListing = (atualizado: Anuncio) => {
-    setCatalogo((prev) => prev.map((anuncio) => anuncio.idAnuncio === atualizado.idAnuncio ? atualizado : anuncio))
-    setVoltarParaAnuncios(true)
-    setCurrentView('profile')
-  }
-
-  const editListing = (id: string) => {
-    setAnuncioSelecionadoId(id)
-    setCurrentView('edit')
-  }
-
-  const deleteListing = (id: string) => {
-    setCatalogo((prev) => prev.filter((anuncio) => anuncio.idAnuncio !== id))
-    setFavoritos((prev) => prev.filter((favId) => favId !== id))
-  }
-
-  const submitReport = (denuncia: Denuncia) => {
-    setDenuncias((prev) => [...prev, denuncia])
+  const buscar = (texto: string) => {
+    setBusca(texto)
+    setCurrentView('home')
   }
 
   const openDetail = (id: string) => {
@@ -68,19 +132,99 @@ export default function Page() {
     setCurrentView('detail')
   }
 
+  // ---- Ações -------------------------------------------------------------------
+
+  const toggleFavorite = async (id: string) => {
+    if (!usuario) return pedirLogin(currentView)
+    const jaFavorito = favoritos.includes(id)
+    const anuncio = [...catalogo, ...meusAnuncios].find((a) => a.idAnuncio === id)
+    setFavoritosAnuncios((prev) => jaFavorito ? prev.filter((a) => a.idAnuncio !== id) : anuncio ? [anuncio, ...prev] : prev)
+    try {
+      await api(`/favoritos/${id}`, { method: jaFavorito ? 'DELETE' : 'PUT' })
+    } catch (erro) {
+      avisarErro(erro)
+      carregarMeusDados().catch(() => {})
+    }
+  }
+
+  const togglePause = async (id: string) => {
+    const anuncio = meusAnuncios.find((a) => a.idAnuncio === id)
+    if (!anuncio) return
+    try {
+      await api(`/anuncios/${id}/${anuncio.status === 'ativo' ? 'pausar' : 'reativar'}`, { method: 'POST' })
+      await recarregarTudo()
+    } catch (erro) {
+      avisarErro(erro)
+    }
+  }
+
+  // Erros destas três funções sobem para o formulário, que os exibe junto aos campos.
+  const publishListing = async (novo: NovoAnuncio) => {
+    await api('/anuncios', { method: 'POST', body: novo })
+    await recarregarTudo()
+    setCurrentView('home')
+    avisar('sucesso', 'Anúncio publicado.')
+  }
+
+  const updateListing = async (id: string, dados: EdicaoAnuncio) => {
+    await api(`/anuncios/${id}`, { method: 'PATCH', body: dados })
+    await recarregarTudo()
+    setVoltarParaAnuncios(true)
+    setCurrentView('profile')
+    avisar('sucesso', 'Anúncio atualizado.')
+  }
+
+  const submitReport = async (denuncia: NovaDenuncia) => {
+    await api('/denuncias', { method: 'POST', body: denuncia })
+  }
+
+  const editListing = (id: string) => {
+    setAnuncioSelecionadoId(id)
+    setCurrentView('edit')
+  }
+
+  const deleteListing = async (id: string) => {
+    try {
+      await api(`/anuncios/${id}`, { method: 'DELETE' })
+      await recarregarTudo()
+    } catch (erro) {
+      avisarErro(erro)
+    }
+  }
+
+  const salvarPerfil = async (campos: Partial<Pick<UsuarioSessao, 'nome' | 'enderecoCompleto' | 'chavePix'>>) => {
+    sessao.atualizar(await api<UsuarioSessao>('/usuarios/me', { method: 'PATCH', body: campos }))
+  }
+
+  // ---- Renderização -------------------------------------------------------------
+
   const renderView = () => {
-    if (currentView === 'detail' && anuncioSelecionado) return <Detail key={anuncioSelecionado.idAnuncio} anuncio={anuncioSelecionado} onBack={() => setCurrentView(previousView)} onReport={submitReport} />
-    if (currentView === 'sell') return <Sell onPublish={publishListing} />
+    if (currentView === 'login') return <AuthForm entrar={sessao.entrar} cadastrar={sessao.cadastrar} onSucesso={() => setCurrentView(destinoLogin === 'login' ? 'home' : destinoLogin)} motivo={destinoLogin !== 'home' ? 'Entre ou crie uma conta para continuar.' : undefined} />
+    if (currentView === 'detail' && anuncioSelecionado) return <Detail key={anuncioSelecionado.idAnuncio} anuncio={anuncioSelecionado} logado={Boolean(usuario)} onBack={() => setCurrentView(previousView)} onReport={submitReport} onRequireLogin={() => pedirLogin('detail')} />
+    if (!usuario) {
+      if (currentView === 'home' || currentView === 'detail') return renderHome()
+      return null // aguardando o redirecionamento para o login
+    }
+    if (currentView === 'sell') return <Sell catalogoMestre={catalogoMestre} localizacaoPadrao={usuario.enderecoCompleto} onPublish={publishListing} />
     if (currentView === 'edit' && anuncioSelecionado) return <EditListing key={anuncioSelecionado.idAnuncio} anuncio={anuncioSelecionado} onSave={updateListing} onCancel={() => { setVoltarParaAnuncios(true); setCurrentView('profile') }} />
     if (currentView === 'chat') return <Chat />
-    if (currentView === 'profile') return <Profile key={voltarParaAnuncios ? 'anuncios' : 'dados'} abaInicial={voltarParaAnuncios ? 'anuncios' : 'dados'} meusAnuncios={meusAnuncios}onEditListing={editListing} onTogglePause={togglePause} onDeleteListing={deleteListing} />
-    if (currentView === 'favorites') return <Favorites catalogo={catalogoAtivo} onOpen={openDetail} onBrowse={() => setCurrentView('home')} favoritos={favoritos} onToggleFavorite={toggleFavorite} />
-    return <Home catalogo={catalogoAtivo} onOpen={openDetail} favoritos={favoritos} onToggleFavorite={toggleFavorite} />
+    if (currentView === 'profile') return <Profile key={voltarParaAnuncios ? 'anuncios' : 'dados'} abaInicial={voltarParaAnuncios ? 'anuncios' : 'dados'} usuario={usuario} meusAnuncios={meusAnuncios.filter((anuncio) => anuncio.status !== 'removido')} onSalvarPerfil={salvarPerfil} onSair={sair} onEditListing={editListing} onTogglePause={togglePause} onDeleteListing={deleteListing} />
+    if (currentView === 'favorites') return <Favorites catalogo={favoritosAnuncios} onOpen={openDetail} onBrowse={() => setCurrentView('home')} favoritos={favoritos} onToggleFavorite={toggleFavorite} />
+    return renderHome()
   }
+
+  const renderHome = () => (
+    <Home catalogo={catalogo} carregando={carregandoCatalogo} erro={erroCatalogo} busca={busca} filtros={filtros} onFiltrosChange={setFiltros} instrumentos={catalogoMestre} onOpen={openDetail} favoritos={favoritos} onToggleFavorite={toggleFavorite} />
+  )
 
   return (
     <div className="min-h-screen bg-white text-gray-950">
-      <Header onNavigate={(view) => { setVoltarParaAnuncios(false); setCurrentView(view) }} />
+      <Header onNavigate={navegar} onSearch={buscar} logado={Boolean(usuario)} />
+      {aviso && (
+        <div role={aviso.tipo === 'erro' ? 'alert' : 'status'} className={`px-5 py-3 text-center text-sm font-semibold ${aviso.tipo === 'erro' ? 'bg-red-50 text-red-700' : 'bg-green-50 text-green-700'}`}>
+          {aviso.texto}
+        </div>
+      )}
       {renderView()}
       <Footer />
     </div>

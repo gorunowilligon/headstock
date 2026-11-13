@@ -7,15 +7,16 @@ import { Button } from '@/components/ui/button'
 import { ReportDialog } from '@/components/detail/report-dialog'
 import { Spec } from '@/components/detail/spec'
 import { exibirEspecificacoesTecnicas } from '@/lib/config'
-import { buscarUsuario, usuarioLogado } from '@/lib/mock-data'
-import type { Anuncio, Denuncia } from '@/lib/models'
+import { mensagemDeErro } from '@/lib/api'
+import type { Anuncio, NovaDenuncia } from '@/lib/models'
 import { formatarPreco } from '@/lib/price'
 
-export function Detail({ anuncio, onBack, onReport }: { anuncio: Anuncio, onBack: () => void, onReport: (denuncia: Denuncia) => void }) {
+export function Detail({ anuncio, logado, onBack, onReport, onRequireLogin }: { anuncio: Anuncio, logado: boolean, onBack: () => void, onReport: (denuncia: NovaDenuncia) => Promise<void>, onRequireLogin: () => void }) {
   const [photo, setPhoto] = useState(0)
-  const vendedor = buscarUsuario(anuncio.idVendedor) ?? usuarioLogado
+  const vendedor = anuncio.vendedor ?? { nome: 'Vendedor', reputacaoMedia: 0 }
   const iniciaisVendedor = vendedor.nome.split(' ').map((parte) => parte[0]).slice(0, 2).join('')
   const [isReportOpen, setIsReportOpen] = useState(false)
+  const [erroDenuncia, setErroDenuncia] = useState('')
   const [motivo, setMotivo] = useState('')
   const [descricaoTextual, setDescricaoTextual] = useState('')
   const [reportSent, setReportSent] = useState(false)
@@ -28,20 +29,25 @@ export function Detail({ anuncio, onBack, onReport }: { anuncio: Anuncio, onBack
     return () => clearTimeout(timer)
   }, [reportSent])
 
-  const handleReportSubmit = (e: FormEvent<HTMLFormElement>) => {
+  const handleReportSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    onReport({
-      idDenuncia: crypto.randomUUID(),
-      motivo,
-      descricaoTextual,
-      status: 'aberta',
-      idAutor: usuarioLogado.idUsuario,
-      idAnuncio: anuncio.idAnuncio,
-    })
+    setErroDenuncia('')
+    try {
+      await onReport({ idAnuncio: anuncio.idAnuncio, motivo, descricaoTextual })
+    } catch (erro) {
+      setErroDenuncia(mensagemDeErro(erro))
+      return
+    }
     setIsReportOpen(false)
     setMotivo('')
     setDescricaoTextual('')
     setReportSent(true)
+  }
+
+  const abrirDenuncia = () => {
+    if (!logado) return onRequireLogin()
+    setErroDenuncia('')
+    setIsReportOpen(true)
   }
 
   return (
@@ -108,13 +114,13 @@ export function Detail({ anuncio, onBack, onReport }: { anuncio: Anuncio, onBack
               </div>
             </div>
             <div>
-              <button onClick={() => setIsReportOpen(true)} className="flex w-fit items-center gap-1.5 text-xs font-semibold text-gray-400 hover:text-red-600"><Flag className="size-3.5" /> Denunciar</button>
+              <button onClick={abrirDenuncia} className="flex w-fit items-center gap-1.5 text-xs font-semibold text-gray-400 hover:text-red-600"><Flag className="size-3.5" /> Denunciar</button>
               {reportSent && <p role="status" className="mt-2 text-xs font-semibold text-green-600">Denúncia enviada para a moderação.</p>}
             </div>
           </div>
         </aside>
       </div>
-      <ReportDialog open={isReportOpen} motivo={motivo} onMotivoChange={setMotivo} descricaoTextual={descricaoTextual} onDescricaoTextualChange={setDescricaoTextual} onClose={() => setIsReportOpen(false)} onSubmit={handleReportSubmit} />
+      <ReportDialog open={isReportOpen} motivo={motivo} onMotivoChange={setMotivo} descricaoTextual={descricaoTextual} onDescricaoTextualChange={setDescricaoTextual} erro={erroDenuncia} onClose={() => setIsReportOpen(false)} onSubmit={handleReportSubmit} />
     </main>
   )
 }

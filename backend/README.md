@@ -61,7 +61,7 @@ api/index.js           entrada da função serverless na Vercel
 | RF03 editar especificações | `PATCH /anuncios/{id}` (campo `instrumento`) |
 | RF04 preenchimento manual | `POST /anuncios` com `instrumento` no lugar de `idInstrumentoCatalogo` |
 | RF05 excluir, pausar e editar | `DELETE /anuncios/{id}`, `POST /anuncios/{id}/pausar` e `/reativar`, `PATCH /anuncios/{id}` |
-| RF06 busca com filtros | `GET /anuncios?q=&marca=&categoria=&tipoCaptacao=&condicao=&precoMin=&precoMax=&localizacao=` |
+| RF06 busca com filtros | `GET /anuncios?q=&marca=&categoria=&tipoCaptacao=&condicao=&precoMin=&precoMax=&localizacao=&ordenar=` (marca, categoria, tipoCaptacao e condicao aceitam vários valores separados por vírgula) |
 | RF07 login obrigatório | Middleware `autenticar` (401 sem token) |
 | RF09 checkout e frete | `POST /frete/cotacao`, `POST /pedidos` |
 | RF10 chat | `POST /mensagens`, `GET /mensagens/conversas`, `GET /mensagens?com=` |

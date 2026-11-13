@@ -1,7 +1,17 @@
-import { Guitar, Heart, Menu, MessageCircle, Plus, Search, UserRound } from 'lucide-react'
+'use client'
+
+import { useState, type FormEvent } from 'react'
+import { Guitar, Heart, LogIn, Menu, MessageCircle, Plus, Search, UserRound } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
-export function Header({ onNavigate }: { onNavigate: (view: string) => void }) {
+export function Header({ onNavigate, onSearch, logado }: { onNavigate: (view: string) => void, onSearch: (texto: string) => void, logado: boolean }) {
+  const [texto, setTexto] = useState('')
+
+  const handleSearch = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    onSearch(texto.trim())
+  }
+
   return (
     <header className="sticky top-0 z-20 border-b bg-white/95 backdrop-blur">
       <div className="mx-auto flex h-20 max-w-[1440px] items-center gap-5 px-5 lg:px-10">
@@ -9,17 +19,19 @@ export function Header({ onNavigate }: { onNavigate: (view: string) => void }) {
           <span className="grid size-9 place-items-center rounded-xl bg-red-600 text-white"><Guitar /></span>
           <span className="text-2xl font-extrabold tracking-tight text-red-600">headstock</span>
         </button>
-        <div className="hidden flex-1 md:block">
+        <form onSubmit={handleSearch} role="search" className="hidden flex-1 md:block">
           <div className="mx-auto flex max-w-2xl items-center rounded-xl border bg-gray-50 px-4 py-2.5">
             <Search className="mr-3 text-gray-400" />
-            <input className="w-full bg-transparent text-sm outline-none" placeholder="O que você está procurando?" aria-label="Buscar anúncios" />
+            <input value={texto} onChange={(e) => setTexto(e.target.value)} className="w-full bg-transparent text-sm outline-none" placeholder="O que você está procurando?" aria-label="Buscar anúncios" />
           </div>
-        </div>
+        </form>
         <nav className="ml-auto flex items-center gap-1" aria-label="Navegação principal">
           <Button variant="ghost" size="icon" onClick={() => onNavigate('favorites')} aria-label="Favoritos"><Heart /></Button>
           <Button variant="ghost" size="icon" onClick={() => onNavigate('chat')} aria-label="Mensagens"><MessageCircle /></Button>
           <Button onClick={() => onNavigate('sell')} className="hidden gap-2 bg-red-600 hover:bg-red-700 sm:flex"><Plus /> Criar anúncio</Button>
-          <Button variant="ghost" size="icon" onClick={() => onNavigate('profile')} aria-label="Perfil"><UserRound /></Button>
+          {logado
+            ? <Button variant="ghost" size="icon" onClick={() => onNavigate('profile')} aria-label="Perfil"><UserRound /></Button>
+            : <Button variant="outline" onClick={() => onNavigate('login')} className="gap-2"><LogIn /> Entrar</Button>}
           <Button variant="ghost" size="icon" className="md:hidden" aria-label="Abrir menu"><Menu /></Button>
         </nav>
       </div>

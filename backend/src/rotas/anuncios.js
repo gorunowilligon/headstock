@@ -21,6 +21,7 @@ const camposAnuncio = {
   descricao: z.string().trim().max(5000).optional(),
 }
 
+const lista = (valor) => (valor ?? '').split(',').map((item) => item.trim()).filter(Boolean)
 const contem = (valor) => ({ contains: valor, mode: 'insensitive' })
 const igual = (valor) => ({ equals: valor, mode: 'insensitive' })
 
@@ -61,10 +62,10 @@ rotas.get('/', {
   resumo: 'Buscar anúncios ativos com filtros do nicho musical (RF06)',
   query: z.object({
     q: z.string().trim().optional().describe('Texto livre: título, descrição, marca ou modelo'),
-    marca: z.string().trim().optional(),
-    categoria: z.string().trim().optional(),
-    tipoCaptacao: z.string().trim().optional(),
-    condicao: z.string().trim().optional(),
+    marca: z.string().trim().optional().describe('Uma ou mais marcas separadas por vírgula'),
+    categoria: z.string().trim().optional().describe('Uma ou mais categorias separadas por vírgula'),
+    tipoCaptacao: z.string().trim().optional().describe('Um ou mais tipos de captação separados por vírgula'),
+    condicao: z.string().trim().optional().describe('Uma ou mais condições separadas por vírgula (ex.: "Novo,Usado" casa também com "Usado · Excelente")'),
     localizacao: z.string().trim().optional(),
     precoMin: z.coerce.number().min(0).optional(),
     precoMax: z.coerce.number().min(0).optional(),
@@ -82,12 +83,15 @@ rotas.get('/', {
         { instrumento: { is: { modelo: contem(query.q) } } },
       ] })
     }
-    const instrumento = {}
-    if (query.marca) instrumento.marca = igual(query.marca)
-    if (query.categoria) instrumento.categoria = igual(query.categoria)
-    if (query.tipoCaptacao) instrumento.tipoCaptacao = contem(query.tipoCaptacao)
-    if (Object.keys(instrumento).length) filtros.push({ instrumento: { is: instrumento } })
-    if (query.condicao) filtros.push({ condicao: contem(query.condicao) })
+    // Cada filtro de lista casa com qualquer um dos valores (OR); filtros diferentes se combinam (AND).
+    const doInstrumento = (campo, valores, operador) => {
+      if (valores.length) filtros.push({ instrumento: { is: { OR: valores.map((v) => ({ [campo]: operador(v) })) } } })
+    }
+    doInstrumento('marca', lista(query.marca), igual)
+    doInstrumento('categoria', lista(query.categoria), igual)
+    doInstrumento('tipoCaptacao', lista(query.tipoCaptacao), igual)
+    const condicoes = lista(query.condicao)
+    if (condicoes.length) filtros.push({ OR: condicoes.map((c) => ({ condicao: contem(c) })) })
     if (query.localizacao) filtros.push({ localizacao: contem(query.localizacao) })
     if (query.precoMin !== undefined) filtros.push({ preco: { gte: query.precoMin } })
     if (query.precoMax !== undefined) filtros.push({ preco: { lte: query.precoMax } })

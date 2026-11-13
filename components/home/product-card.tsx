@@ -1,5 +1,5 @@
 import { Heart, MapPin } from 'lucide-react'
-import { capaDoAnuncio } from '@/lib/mock-data'
+import { capaDoAnuncio } from '@/lib/anuncio'
 import type { Anuncio } from '@/lib/models'
 import { formatarPreco } from '@/lib/price'
 

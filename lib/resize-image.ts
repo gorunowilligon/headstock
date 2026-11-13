@@ -1,4 +1,6 @@
-export function redimensionarImagem(file: File, maxLado = 800, qualidade = 0.7): Promise<string> {
+// Reduz a imagem no navegador antes do envio (a Vercel limita cada requisição a 4,5 MB).
+// O servidor ainda a redimensiona de novo (RNF08).
+export function redimensionarImagem(file: File, maxLado = 1200, qualidade = 0.8): Promise<Blob> {
   return new Promise((resolve, reject) => {
     const url = URL.createObjectURL(file)
     const img = new Image()
@@ -9,7 +11,11 @@ export function redimensionarImagem(file: File, maxLado = 800, qualidade = 0.7):
       canvas.height = Math.round(img.height * escala)
       canvas.getContext('2d')?.drawImage(img, 0, 0, canvas.width, canvas.height)
       URL.revokeObjectURL(url)
-      resolve(canvas.toDataURL('image/jpeg', qualidade))
+      canvas.toBlob(
+        (blob) => blob ? resolve(blob) : reject(new Error(`Não foi possível converter a imagem ${file.name}`)),
+        'image/jpeg',
+        qualidade,
+      )
     }
     img.onerror = () => {
       URL.revokeObjectURL(url)

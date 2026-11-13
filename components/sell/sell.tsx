@@ -5,14 +5,14 @@ import { Button } from '@/components/ui/button'
 import { CategoryFields } from '@/components/sell/category-fields'
 import { GlobalSpecFields } from '@/components/sell/global-spec-fields'
 import { PhotoUploader } from '@/components/sell/photo-uploader'
+import { mensagemDeErro } from '@/lib/api'
 import { categorias, type Categoria } from '@/lib/categories'
-import { catalogoMestre, usuarioLogado } from '@/lib/mock-data'
-import type { Anuncio, FotoAnuncio, Instrumento } from '@/lib/models'
+import type { FotoAnuncio, Instrumento, NovoAnuncio } from '@/lib/models'
 import { MIN_FOTOS, mensagemFotosInsuficientes } from '@/lib/photos'
 
-const localizacaoDoUsuario = 'São Paulo, SP'
-
-export function Sell({ onPublish }: { onPublish: (anuncio: Anuncio) => void }) {
+export function Sell({ catalogoMestre, localizacaoPadrao, onPublish }: { catalogoMestre: Instrumento[], localizacaoPadrao: string, onPublish: (anuncio: NovoAnuncio) => Promise<void> }) {
+  const [enviando, setEnviando] = useState(false)
+  const [erroEnvio, setErroEnvio] = useState('')
   const [price, setPrice] = useState('')
   const [preencherManual, setPreencherManual] = useState(false)
   const [categoriaSelecionada, setCategoriaSelecionada] = useState<Categoria | ''>('')
@@ -25,7 +25,7 @@ export function Sell({ onPublish }: { onPublish: (anuncio: Anuncio) => void }) {
     if (novas.length >= MIN_FOTOS) setErroFotos('')
   }
 
-  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     if (fotos.length < MIN_FOTOS) {
       setErroFotos(mensagemFotosInsuficientes(fotos.length))
@@ -35,31 +35,35 @@ export function Sell({ onPublish }: { onPublish: (anuncio: Anuncio) => void }) {
     const data = new FormData(e.currentTarget)
     const campo = (nome: string) => String(data.get(nome) ?? '').trim()
 
-    const instrumento: Instrumento | undefined = preencherManual
-      ? {
-          idInstrumento: crypto.randomUUID(),
-          marca: campo('marca'),
-          modelo: campo('modelo'),
-          categoria: categorias.find((categoria) => categoria.value === categoriaSelecionada)?.tipo ?? 'Outros',
-          tipoCaptacao: campo('tipoCaptacao'),
-          numeroCordas: Number(campo('numeroCordas')) || 0,
-          orientacao: campo('orientacao'),
-        }
-      : catalogoMestre.find((i) => i.idInstrumento === campo('catalogo'))
-    if (!instrumento) return
-
-    onPublish({
-      idAnuncio: crypto.randomUUID(),
-      titulo: `${instrumento.marca} ${instrumento.modelo}`,
-      preco: value,
+    const dadosBase = {
       condicao: campo('condicao'),
-      status: 'ativo',
-      dataCriacao: new Date().toISOString(),
-      idVendedor: usuarioLogado.idUsuario,
-      instrumento,
-      fotos,
-      localizacao: localizacaoDoUsuario,
-    })
+      preco: value,
+      localizacao: campo('localizacao'),
+      fotos: fotos.map((foto) => foto.idFoto),
+    }
+    const anuncio: NovoAnuncio = preencherManual
+      ? {
+          ...dadosBase,
+          instrumento: {
+            marca: campo('marca'),
+            modelo: campo('modelo'),
+            categoria: categorias.find((categoria) => categoria.value === categoriaSelecionada)?.tipo ?? 'Outros',
+            tipoCaptacao: campo('tipoCaptacao'),
+            numeroCordas: Number(campo('numeroCordas')) || 0,
+            orientacao: campo('orientacao'),
+          },
+        }
+      : { ...dadosBase, idInstrumentoCatalogo: campo('catalogo') }
+
+    setEnviando(true)
+    setErroEnvio('')
+    try {
+      await onPublish(anuncio)
+    } catch (erro) {
+      setErroEnvio(mensagemDeErro(erro))
+    } finally {
+      setEnviando(false)
+    }
   }
 
   return (
@@ -121,6 +125,10 @@ export function Sell({ onPublish }: { onPublish: (anuncio: Anuncio) => void }) {
                   </div>
                 </label>
               </div>
+              <label className="mt-5 block text-sm font-semibold">
+                Localização do item
+                <input name="localizacao" defaultValue={localizacaoPadrao} required minLength={2} placeholder="Ex.: São Paulo, SP" className="mt-2 w-full rounded-lg border bg-white px-3 py-3 font-normal" />
+              </label>
               <label className="mt-5 flex items-center justify-between border-t pt-5 text-sm font-semibold">
                 Aceitar propostas de preço
                 <input type="checkbox" defaultChecked />
@@ -144,7 +152,8 @@ export function Sell({ onPublish }: { onPublish: (anuncio: Anuncio) => void }) {
                 <strong className="text-xl text-red-600">R$ {(value * .93).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong>
               </div>
             </div>
-            <Button type="submit" className="mt-7 w-full bg-red-600 hover:bg-red-700">Publicar anúncio</Button>
+            {erroEnvio && <p role="alert" className="mt-5 text-sm font-semibold text-red-600">{erroEnvio}</p>}
+            <Button type="submit" disabled={enviando} className="mt-7 w-full bg-red-600 hover:bg-red-700">{enviando ? 'Publicando...' : 'Publicar anúncio'}</Button>
           </aside>
         </form>
       </div>
