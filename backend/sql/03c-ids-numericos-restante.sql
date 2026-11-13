@@ -1,5 +1,5 @@
 -- Headstock | Parte 3c: IDs NUMERICOS nas demais tabelas
--- Requer as Partes 1, 2, 3 e 3b (04-ids-numericos.sql). Rode UMA vez.
+-- Requer as Partes 1, 2, 3 e 3b (03b-ids-numericos.sql). Rode UMA vez.
 --
 -- Converte de TEXT (uuid) para INTEGER auto-incremento o id de:
 --   Anuncio, FotoAnuncio, Oferta, Pedido, Avaliacao, Mensagem, Denuncia

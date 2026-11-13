@@ -102,7 +102,7 @@ Fluxo de um pedido: `pago` → `enviado` (rastreio) → `entregue` (confirmaçã
 Todas as chaves primárias são **números inteiros auto-incrementados** (`idUsuario`, `idAnuncio`...). Só `Pedido.idTransacao` é texto (código do gateway de pagamento).
 
 - **Desenvolvimento local:** `npm run db:migrate` cria as tabelas a partir de `prisma/schema.prisma`.
-- **Supabase (produção):** rode os scripts de `backend/sql/` no SQL Editor, nesta ordem: `01-estrutura`, `02-usuarios`, `03-instrumentos`, `04-ids-numericos`, `03c-ids-numericos-restante`. Os dois últimos convertem os ids de texto para número; o resultado é igual ao do schema atual.
+- **Supabase (produção):** rode os scripts de `backend/sql/` no SQL Editor, nesta ordem: `01-estrutura`, `02-usuarios`, `03-instrumentos`, `03b-ids-numericos`, `03c-ids-numericos-restante`. Os dois últimos convertem os ids de texto para número; o resultado é igual ao do schema atual.
 - Se um dia quiser usar `prisma migrate` nesse mesmo banco, registre a migração inicial como já aplicada: `npx prisma migrate resolve --applied 20261113190000_init`.
 
 Limitações da Vercel:
