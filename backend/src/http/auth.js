@@ -28,7 +28,7 @@ async function carregarUsuario(req) {
 
 /**
  * modo "opcional": identifica o usuário se houver token, mas não exige.
- * modo "usuario": exige login (RF07).
+ * modo "usuario": exige login (RF06).
  * modo "admin": exige login de Administrador.
  */
 export const autenticar = (modo) => async (req, res, next) => {
@@ -37,7 +37,7 @@ export const autenticar = (modo) => async (req, res, next) => {
     return next()
   }
   const usuario = await carregarUsuario(req)
-  if (!usuario) throw new HttpError(401, 'Faça login ou cadastre-se para continuar (RF07)')
+  if (!usuario) throw new HttpError(401, 'Faça login ou cadastre-se para continuar (RF06)')
   if (modo === 'admin' && usuario.tipo !== 'administrador') throw new HttpError(403, 'Acesso restrito a administradores')
   req.usuario = usuario
   next()

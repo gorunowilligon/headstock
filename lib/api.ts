@@ -38,7 +38,7 @@ interface Opcoes {
 }
 
 // ---- Mensagens para o usuário -------------------------------------------------
-// O usuário nunca vê status HTTP, códigos de requisito (RF07...), mensagens técnicas
+// O usuário nunca vê status HTTP, códigos de requisito (RF06...), mensagens técnicas
 // ou textos da validação do servidor. O detalhe técnico vai para o console.
 
 const MENSAGEM_SEM_CONEXAO = 'Não foi possível conectar. Verifique sua internet e tente novamente.'
@@ -77,7 +77,7 @@ const rotulosDosCampos: Record<string, string> = {
   textoJustificativo: 'Justificativa',
 }
 
-/** Remove referências internas, como "(RF07)" ou "(RNF08)". */
+/** Remove referências internas, como "(RF06)" ou "(RNF08)". */
 const limparCodigos = (texto: string) => texto.replace(/\s*\((?:RF|RNF|RN)\d+[^)]*\)/g, '').trim()
 
 function mensagemDeValidacao(detalhes: unknown) {

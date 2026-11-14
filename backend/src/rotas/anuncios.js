@@ -20,7 +20,7 @@ const camposAnuncio = {
   preco: z.number().positive().max(10_000_000),
   localizacao: z.string().trim().min(2).max(120),
   descricao: z.string().trim().max(5000).optional(),
-  aceitaPropostas: z.boolean().optional().describe('RF08: se o anúncio aceita propostas de preço (padrão: true)'),
+  aceitaPropostas: z.boolean().optional().describe('RF07: se o anúncio aceita propostas de preço (padrão: true)'),
 }
 
 const lista = (valor) => (valor ?? '').split(',').map((item) => item.trim()).filter(Boolean)
@@ -61,7 +61,7 @@ async function definirFotos(tx, idAnuncio, idDono, ids) {
 }
 
 rotas.get('/', {
-  resumo: 'Buscar anúncios ativos com filtros do nicho musical (RF06)',
+  resumo: 'Buscar anúncios ativos com filtros do nicho musical (RF05)',
   query: z.object({
     q: z.string().trim().optional().describe('Texto livre: título, descrição, marca ou modelo'),
     marca: z.string().trim().optional().describe('Uma ou mais marcas separadas por vírgula'),
@@ -144,8 +144,8 @@ rotas.get('/:id', {
 })
 
 rotas.post('/', {
-  resumo: 'Publicar anúncio (RF02, RF04)',
-  descricao: 'Informe idInstrumentoCatalogo (modelo do catálogo mestre) OU instrumento (preenchimento manual, RF04). '
+  resumo: 'Publicar anúncio (RF02, RF03)',
+  descricao: 'Informe idInstrumentoCatalogo (modelo do catálogo mestre) OU instrumento (preenchimento manual, RF03). '
     + 'Exige no mínimo 3 fotos já enviadas em POST /fotos. Usuários suspensos (RN07) não podem publicar.',
   auth: 'usuario',
   status: 201,
@@ -192,7 +192,7 @@ rotas.post('/', {
 })
 
 rotas.patch('/:id', {
-  resumo: 'Editar anúncio (RF03, RF05)',
+  resumo: 'Editar anúncio (RF04)',
   descricao: 'Todos os campos são opcionais. "fotos" substitui a lista inteira (mínimo 3). '
     + '"instrumento" altera as especificações do item anunciado, não do catálogo mestre.',
   auth: 'usuario',
@@ -251,11 +251,11 @@ const mudarStatus = (de, para, resumo) => ({
   },
 })
 
-rotas.post('/:id/pausar', mudarStatus('ativo', 'pausado', 'Pausar anúncio (RF05)'))
-rotas.post('/:id/reativar', mudarStatus('pausado', 'ativo', 'Reativar anúncio pausado (RF05)'))
+rotas.post('/:id/pausar', mudarStatus('ativo', 'pausado', 'Pausar anúncio (RF04)'))
+rotas.post('/:id/reativar', mudarStatus('pausado', 'ativo', 'Reativar anúncio pausado (RF04)'))
 
 rotas.delete('/:id', {
-  resumo: 'Excluir anúncio (RF05)',
+  resumo: 'Excluir anúncio (RF04)',
   descricao: 'Anúncios com pedidos ficam com status "removido" para preservar o histórico; os demais são apagados.',
   auth: 'usuario',
   handler: async ({ usuario, params }) => {

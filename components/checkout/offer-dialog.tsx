@@ -8,7 +8,7 @@ import { mensagemDeErro } from '@/lib/api'
 import { marcarInvalido } from '@/lib/validacao'
 import { formatarMoeda } from '@/lib/formatar'
 
-/** Formulário de valor usado para propostas e contrapropostas (RF08). */
+/** Formulário de valor usado para propostas e contrapropostas (RF07). */
 export function OfferDialog({ titulo, precoAnuncio, valorAtual, onEnviar, onClose }: {
   titulo: string
   precoAnuncio: number

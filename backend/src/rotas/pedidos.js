@@ -37,7 +37,7 @@ rotasFrete.post('/cotacao', {
 const rotas = criarRouter('/pedidos', 'Pedidos')
 
 rotas.post('/', {
-  resumo: 'Comprar anúncio: checkout com pagamento e frete (RF09, RN01)',
+  resumo: 'Comprar anúncio: checkout com pagamento e frete (RF08, RN01)',
   descricao: 'Pagamento em sandbox: a transação é aprovada na hora e nenhum dado de cartão é enviado. '
     + 'A taxa da plataforma (7%) incide sobre o valor do produto.',
   auth: 'usuario',
@@ -46,7 +46,7 @@ rotas.post('/', {
     idAnuncio: idNumerico,
     metodoPagamento: z.enum(['cartao', 'pix']),
     cepDestino: cep,
-    idOferta: idNumerico.optional().describe('Proposta aceita (RF08): o produto sai pelo valor da proposta'),
+    idOferta: idNumerico.optional().describe('Proposta aceita (RF07): o produto sai pelo valor da proposta'),
   }),
   handler: async ({ usuario, body }) => {
     const anuncio = await anuncioAVenda(body.idAnuncio)
@@ -162,7 +162,7 @@ rotas.post('/:id/disputa', {
 })
 
 rotas.post('/:id/avaliacoes', {
-  resumo: 'Avaliar o vendedor ou o produto, 1 a 5 estrelas (RF11)',
+  resumo: 'Avaliar o vendedor ou o produto, 1 a 5 estrelas (RF10)',
   descricao: 'Disponível ao comprador depois da entrega. Cada pedido aceita uma avaliação de cada tipo. '
     + 'A avaliação do vendedor atualiza a reputação dele e pode suspendê-lo (RN07).',
   auth: 'usuario',

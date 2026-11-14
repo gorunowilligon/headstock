@@ -22,10 +22,10 @@ export interface ItemCheckout {
   capa?: string
 }
 
-/** Checkout (RF09): cotação de frete pelo CEP, escolha do pagamento e criação do pedido. */
+/** Checkout (RF08): cotação de frete pelo CEP, escolha do pagamento e criação do pedido. */
 export function CheckoutDialog({ item, oferta, onClose, onConcluido }: {
   item: ItemCheckout
-  /** Proposta aceita (RF08): o produto sai pelo valor dela. */
+  /** Proposta aceita (RF07): o produto sai pelo valor dela. */
   oferta?: { idOferta: number, valor: number }
   onClose: () => void
   onConcluido: (pedido: Pedido) => void

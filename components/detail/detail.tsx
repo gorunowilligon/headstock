@@ -80,7 +80,7 @@ export function Detail({ anuncio, idUsuarioLogado, onBack, onReport, onRequireLo
     setIsReportOpen(true)
   }
 
-  // RF07: comprar, propor e conversar exigem login.
+  // RF06: comprar, propor e conversar exigem login.
   const comLogin = (acao: () => void) => () => (logado ? acao() : onRequireLogin())
 
   const enviarOferta = async (valor: number) => {

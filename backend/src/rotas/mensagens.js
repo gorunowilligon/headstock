@@ -10,7 +10,7 @@ const rotas = criarRouter('/mensagens', 'Chat')
 const participante = { select: { idUsuario: true, nome: true } }
 
 rotas.post('/', {
-  resumo: 'Enviar mensagem no chat (RF10)',
+  resumo: 'Enviar mensagem no chat (RF09)',
   auth: 'usuario',
   status: 201,
   body: z.object({
@@ -39,7 +39,7 @@ rotas.post('/', {
 })
 
 rotas.get('/conversas', {
-  resumo: 'Listar conversas do usuário com a última mensagem de cada uma (RF10)',
+  resumo: 'Listar conversas do usuário com a última mensagem de cada uma (RF09)',
   auth: 'usuario',
   handler: async ({ usuario }) => {
     const eu = usuario.idUsuario
@@ -63,7 +63,7 @@ rotas.get('/conversas', {
 })
 
 rotas.get('/', {
-  resumo: 'Histórico de mensagens com outro usuário (RF10)',
+  resumo: 'Histórico de mensagens com outro usuário (RF09)',
   auth: 'usuario',
   query: z.object({
     com: idNumerico.describe('idUsuario da outra pessoa'),

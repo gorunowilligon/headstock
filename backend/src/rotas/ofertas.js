@@ -6,7 +6,7 @@ import { idNumerico } from '../http/ids.js'
 import { serializarOferta } from '../http/serializar.js'
 import { HORAS_VALIDADE_OFERTA, somarHoras } from '../regras.js'
 
-// Propostas de preço (RF08). Fluxo:
+// Propostas de preço (RF07). Fluxo:
 //   comprador propõe -> vendedor aceita, recusa ou faz contraproposta -> o comprador responde à contraproposta...
 //   Uma proposta aceita vale por 24h e é usada no checkout (POST /pedidos com idOferta).
 
@@ -24,7 +24,7 @@ export async function expirarOfertasVencidas(db = prisma) {
   })
 }
 
-/** Registra a ação no chat para que a conversa apareça para as duas partes (RF10). */
+/** Registra a ação no chat para que a conversa apareça para as duas partes (RF09). */
 const avisarNoChat = (tx, { de, para, idAnuncio, conteudo }) =>
   tx.mensagem.create({ data: { idRemetente: de, idDestinatario: para, idAnuncio, conteudo } })
 
@@ -46,7 +46,7 @@ const outraParte = (oferta, usuario) =>
   usuario.idUsuario === oferta.idComprador ? oferta.anuncio.idVendedor : oferta.idComprador
 
 rotas.post('/', {
-  resumo: 'Fazer uma proposta de preço em um anúncio (RF08)',
+  resumo: 'Fazer uma proposta de preço em um anúncio (RF07)',
   descricao: 'Substitui a proposta anterior do mesmo comprador neste anúncio. Vale por 24h.',
   auth: 'usuario',
   status: 201,
@@ -82,7 +82,7 @@ rotas.post('/', {
 })
 
 rotas.get('/', {
-  resumo: 'Listar propostas em que o usuário é comprador ou vendedor (RF08)',
+  resumo: 'Listar propostas em que o usuário é comprador ou vendedor (RF07)',
   auth: 'usuario',
   query: z.object({
     anuncio: idNumerico.optional().describe('Apenas as propostas deste anúncio'),
@@ -104,7 +104,7 @@ rotas.get('/', {
 })
 
 rotas.post('/:id/aceitar', {
-  resumo: 'Aceitar uma proposta (RF08)',
+  resumo: 'Aceitar uma proposta (RF07)',
   descricao: 'O comprador tem 24h para concluir a compra pelo valor aceito (POST /pedidos com idOferta).',
   auth: 'usuario',
   handler: async ({ usuario, params }) => {
@@ -123,7 +123,7 @@ rotas.post('/:id/aceitar', {
 })
 
 rotas.post('/:id/recusar', {
-  resumo: 'Recusar uma proposta (RF08)',
+  resumo: 'Recusar uma proposta (RF07)',
   auth: 'usuario',
   handler: async ({ usuario, params }) => {
     const oferta = await ofertaParaResponder(params.id, usuario)
@@ -141,7 +141,7 @@ rotas.post('/:id/recusar', {
 })
 
 rotas.post('/:id/contraproposta', {
-  resumo: 'Responder a uma proposta com outro valor (RF08)',
+  resumo: 'Responder a uma proposta com outro valor (RF07)',
   auth: 'usuario',
   status: 201,
   body: z.object({ valor }),

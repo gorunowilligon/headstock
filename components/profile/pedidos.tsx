@@ -25,7 +25,7 @@ const corDoStatus: Record<string, string> = {
   em_disputa: 'bg-red-50 text-red-700',
 }
 
-/** Compras ou vendas do usuário, com as ações de cada etapa do pedido (RF09, RF11, RN02–RN04, RN09). */
+/** Compras ou vendas do usuário, com as ações de cada etapa do pedido (RF08, RF10, RN02–RN04, RN09). */
 export function Pedidos({ papel }: { papel: Papel }) {
   const [pedidos, setPedidos] = useState<Pedido[] | null>(null)
   const [erro, setErro] = useState('')

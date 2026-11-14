@@ -10,7 +10,7 @@ import { api, mensagemDeErro } from '@/lib/api'
 import { formatarData, formatarHora, formatarMoeda, iniciais, rotuloStatusOferta, tempoRestante } from '@/lib/formatar'
 import type { Conversa, Mensagem, Oferta, Pedido } from '@/lib/models'
 
-// RF10 (chat) e RF08 (propostas). A tela consulta a API a cada 5 segundos para mostrar novidades.
+// RF09 (chat) e RF07 (propostas). A tela consulta a API a cada 5 segundos para mostrar novidades.
 const INTERVALO_ATUALIZACAO = 5000
 
 const chaveDe = (c: AlvoConversa) => `${c.com.idUsuario}:${c.anuncio?.idAnuncio ?? ''}`

@@ -61,7 +61,7 @@ rotas.post('/cadastro', {
 })
 
 rotas.post('/login', {
-  resumo: 'Efetuar login (RF07, RNF10: 10 tentativas/minuto)',
+  resumo: 'Efetuar login (RF06, RNF10: 10 tentativas/minuto)',
   antes: [limitarTentativas],
   body: z.object({ email, senha: z.string().min(1) }),
   handler: async ({ body }) => {

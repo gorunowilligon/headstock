@@ -44,15 +44,15 @@ O banco (Supabase) é criado pelos scripts SQL de `backend/sql/`, rodados no SQL
 
 ## Funcionalidades
 
-- Cadastro, login e recuperação de senha (RF01, RF07)
-- Publicação com no mínimo 3 fotos de até 5 MB, catálogo mestre ou preenchimento manual com especificações por categoria (RF02, RF03, RF04, RN08)
-- Edição, pausa e exclusão de anúncios (RF05)
-- Busca com filtros de categoria, marca, captação, condição, preço e localização (RF06)
-- Propostas de preço com aceite, recusa e contraproposta, válidas por 24h (RF08)
-- Checkout com cotação de frete e pagamento por Pix ou cartão em sandbox (RF09, RN01)
-- Chat entre comprador e vendedor (RF10)
-- Acompanhamento de pedidos: rastreio, confirmação de entrega, disputa, avaliações e recibo (RF11, RN02, RN03, RN04, RN09)
-- Favoritos (RF12) e denúncias (RF13)
+- Cadastro, login e recuperação de senha (RF01, RF06)
+- Publicação com no mínimo 3 fotos de até 5 MB, catálogo mestre ou preenchimento manual com especificações por categoria (RF02, RF03, RN08)
+- Edição, pausa e exclusão de anúncios (RF04)
+- Busca com filtros de categoria, marca, captação, condição, preço e localização (RF05)
+- Propostas de preço com aceite, recusa e contraproposta, válidas por 24h (RF07)
+- Checkout com cotação de frete e pagamento por Pix ou cartão em sandbox (RF08, RN01)
+- Chat entre comprador e vendedor (RF09)
+- Acompanhamento de pedidos: rastreio, confirmação de entrega, disputa, avaliações e recibo (RF10, RN02, RN03, RN04, RN09)
+- Favoritos (RF11) e denúncias (RF12)
 
 ## Uso de ferramentas de IA
 

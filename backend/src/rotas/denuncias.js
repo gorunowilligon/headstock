@@ -8,7 +8,7 @@ import { serializarDenuncia } from '../http/serializar.js'
 const rotas = criarRouter('/denuncias', 'Denúncias')
 
 rotas.post('/', {
-  resumo: 'Denunciar anúncio, perfil ou mensagem do chat (RF13)',
+  resumo: 'Denunciar anúncio, perfil ou mensagem do chat (RF12)',
   descricao: 'Informe exatamente um alvo: idAnuncio, idUsuarioDenunciado ou idMensagem.',
   auth: 'usuario',
   status: 201,

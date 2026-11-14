@@ -4,7 +4,7 @@ import { naoEncontrado } from '../http/erros.js'
 import { criarRouter } from '../http/rota.js'
 import { serializarInstrumento } from '../http/serializar.js'
 
-// Campos reaproveitados pelo cadastro manual de anúncios (RF04).
+// Campos reaproveitados pelo cadastro manual de anúncios (RF03).
 export const instrumentoBase = z.object({
   marca: z.string().trim().min(1).max(80),
   modelo: z.string().trim().min(1).max(120),
@@ -50,7 +50,7 @@ rotas.get('/:id', {
 })
 
 rotas.post('/', {
-  resumo: 'Cadastrar instrumento no catálogo mestre (RF14)',
+  resumo: 'Cadastrar instrumento no catálogo mestre (RF13)',
   auth: 'admin',
   status: 201,
   body: instrumentoBase,
@@ -58,7 +58,7 @@ rotas.post('/', {
 })
 
 rotas.patch('/:id', {
-  resumo: 'Editar instrumento do catálogo mestre (RF14)',
+  resumo: 'Editar instrumento do catálogo mestre (RF13)',
   descricao: 'Anúncios já publicados mantêm sua própria cópia das especificações e não são alterados.',
   auth: 'admin',
   body: instrumentoBase.partial(),
@@ -69,7 +69,7 @@ rotas.patch('/:id', {
 })
 
 rotas.delete('/:id', {
-  resumo: 'Remover instrumento do catálogo mestre (RF14)',
+  resumo: 'Remover instrumento do catálogo mestre (RF13)',
   auth: 'admin',
   handler: async ({ params }) => {
     await buscarDoCatalogo(params.id)

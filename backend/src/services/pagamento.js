@@ -1,4 +1,4 @@
-// Gateway de pagamento em modo sandbox (RF09 + seção 2.4): aprova toda transação
+// Gateway de pagamento em modo sandbox (RF08 + seção 2.4): aprova toda transação
 // e gera um "Pix copia e cola" fictício. Nenhum dado de cartão é recebido ou armazenado.
 
 import crypto from 'node:crypto'

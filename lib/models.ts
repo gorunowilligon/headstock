@@ -95,7 +95,7 @@ export interface Anuncio {
   fotos: FotoAnuncio[]
   localizacao: string // não consta no diagrama
   descricao?: string // não consta no diagrama
-  aceitaPropostas: boolean // não consta no diagrama (RF08)
+  aceitaPropostas: boolean // não consta no diagrama (RF07)
   vendedor?: UsuarioPublico // preenchido pela API
 }
 
@@ -172,7 +172,7 @@ export interface Conversa {
 
 export type StatusOferta = 'pendente' | 'aceita' | 'recusada' | 'substituida' | 'cancelada' | 'expirada' | 'utilizada'
 
-/** Proposta de preço (RF08). Não consta no diagrama. */
+/** Proposta de preço (RF07). Não consta no diagrama. */
 export interface Oferta {
   idOferta: number
   valor: number

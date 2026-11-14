@@ -41,7 +41,7 @@ rotas.get('/:id', {
 })
 
 rotas.get('/:id/avaliacoes', {
-  resumo: 'Avaliações recebidas por um vendedor (RF11)',
+  resumo: 'Avaliações recebidas por um vendedor (RF10)',
   handler: async ({ params }) => {
     const avaliacoes = await prisma.avaliacao.findMany({
       where: { pedido: { anuncio: { idVendedor: params.id } } },

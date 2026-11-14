@@ -4,7 +4,7 @@ import { HttpError, naoEncontrado } from '../http/erros.js'
 import { criarRouter } from '../http/rota.js'
 import { pedidoInclude, serializarDenuncia, serializarPedido, serializarUsuarioPrivado } from '../http/serializar.js'
 
-// O gerenciamento do catálogo mestre (RF14) fica em /instrumentos.
+// O gerenciamento do catálogo mestre (RF13) fica em /instrumentos.
 const rotas = criarRouter('/admin', 'Administração')
 
 // ---------------------------------------------------------------- Denúncias
@@ -52,10 +52,10 @@ rotas.patch('/denuncias/:id', {
   },
 })
 
-// ---------------------------------------------------------------- Moderação (RF15)
+// ---------------------------------------------------------------- Moderação (RF14)
 
 rotas.post('/anuncios/:id/remover', {
-  resumo: 'Remover anúncio irregular (RF15)',
+  resumo: 'Remover anúncio irregular (RF14)',
   auth: 'admin',
   handler: async ({ params }) => {
     const anuncio = await prisma.anuncio.findUnique({ where: { idAnuncio: params.id } })
@@ -65,7 +65,7 @@ rotas.post('/anuncios/:id/remover', {
 })
 
 rotas.post('/usuarios/:id/banimento', {
-  resumo: 'Banir ou desbanir usuário (RF15)',
+  resumo: 'Banir ou desbanir usuário (RF14)',
   descricao: 'Ao banir, os anúncios ativos do usuário são pausados e ele perde o acesso à conta.',
   auth: 'admin',
   body: z.object({ banido: z.boolean() }),
@@ -84,10 +84,10 @@ rotas.post('/usuarios/:id/banimento', {
   },
 })
 
-// ---------------------------------------------------------------- Disputas (RF16)
+// ---------------------------------------------------------------- Disputas (RF15)
 
 rotas.get('/disputas', {
-  resumo: 'Pedidos em disputa aguardando resolução (RF16)',
+  resumo: 'Pedidos em disputa aguardando resolução (RF15)',
   auth: 'admin',
   handler: async () => {
     const pedidos = await prisma.pedido.findMany({
@@ -107,7 +107,7 @@ const ACOES = {
 }
 
 rotas.post('/pedidos/:id/resolucao', {
-  resumo: 'Resolver disputa: cancelar venda, autorizar devolução, estornar ou manter a venda (RF16)',
+  resumo: 'Resolver disputa: cancelar venda, autorizar devolução, estornar ou manter a venda (RF15)',
   descricao: 'Estornos são simulados (sandbox). Ao cancelar uma venda ainda não enviada, o anúncio volta a ficar ativo.',
   auth: 'admin',
   body: z.object({

@@ -6,7 +6,7 @@ import { anuncioInclude, serializarAnuncio } from '../http/serializar.js'
 const rotas = criarRouter('/favoritos', 'Favoritos')
 
 rotas.get('/', {
-  resumo: 'Listar anúncios favoritos (RF12)',
+  resumo: 'Listar anúncios favoritos (RF11)',
   auth: 'usuario',
   handler: async ({ usuario }) => {
     const favoritos = await prisma.favorito.findMany({
@@ -19,7 +19,7 @@ rotas.get('/', {
 })
 
 rotas.put('/:idAnuncio', {
-  resumo: 'Favoritar anúncio (RF12)',
+  resumo: 'Favoritar anúncio (RF11)',
   auth: 'usuario',
   handler: async ({ usuario, params }) => {
     const anuncio = await prisma.anuncio.findUnique({ where: { idAnuncio: params.idAnuncio } })
@@ -33,7 +33,7 @@ rotas.put('/:idAnuncio', {
 })
 
 rotas.delete('/:idAnuncio', {
-  resumo: 'Remover anúncio dos favoritos (RF12)',
+  resumo: 'Remover anúncio dos favoritos (RF11)',
   auth: 'usuario',
   handler: async ({ usuario, params }) => {
     await prisma.favorito.deleteMany({ where: { idUsuario: usuario.idUsuario, idAnuncio: params.idAnuncio } })

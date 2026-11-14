@@ -58,20 +58,20 @@ api/index.js           entrada da função serverless na Vercel
 |---|---|
 | RF01 cadastro e recuperação de senha | `POST /auth/cadastro`, `/auth/recuperar-senha`, `/auth/redefinir-senha` |
 | RF02 anúncio com no mínimo 3 fotos | `POST /fotos` (upload) e depois `POST /anuncios` com os `idFoto` |
-| RF03 editar especificações | `PATCH /anuncios/{id}` (campo `instrumento`) |
-| RF04 preenchimento manual | `POST /anuncios` com `instrumento` no lugar de `idInstrumentoCatalogo` |
-| RF05 excluir, pausar e editar | `DELETE /anuncios/{id}`, `POST /anuncios/{id}/pausar` e `/reativar`, `PATCH /anuncios/{id}` |
-| RF06 busca com filtros | `GET /anuncios?q=&marca=&categoria=&tipoCaptacao=&condicao=&precoMin=&precoMax=&localizacao=&ordenar=` (marca, categoria, tipoCaptacao e condicao aceitam vários valores separados por vírgula) |
-| RF07 login obrigatório | Middleware `autenticar` (401 sem token) |
-| RF08 propostas de preço | `POST /ofertas`, `GET /ofertas`, `POST /ofertas/{id}/aceitar`, `/recusar` e `/contraproposta`; a proposta aceita vale 24h e é usada em `POST /pedidos` (`idOferta`) |
-| RF09 checkout e frete | `POST /frete/cotacao`, `POST /pedidos` |
-| RF10 chat | `POST /mensagens`, `GET /mensagens/conversas`, `GET /mensagens?com=` |
-| RF11 avaliações | `POST /pedidos/{id}/avaliacoes`, `GET /usuarios/{id}/avaliacoes` |
-| RF12 favoritos | `GET /favoritos`, `PUT` e `DELETE /favoritos/{idAnuncio}` |
-| RF13 denúncias | `POST /denuncias` |
-| RF14 catálogo mestre | `POST`, `PATCH` e `DELETE /instrumentos` (admin) |
-| RF15 remoção e banimento | `POST /admin/anuncios/{id}/remover`, `POST /admin/usuarios/{id}/banimento` |
-| RF16 disputas | `GET /admin/disputas`, `POST /admin/pedidos/{id}/resolucao` |
+| RF04 editar especificações | `PATCH /anuncios/{id}` (campo `instrumento`) |
+| RF03 preenchimento manual | `POST /anuncios` com `instrumento` no lugar de `idInstrumentoCatalogo` |
+| RF04 excluir, pausar e editar | `DELETE /anuncios/{id}`, `POST /anuncios/{id}/pausar` e `/reativar`, `PATCH /anuncios/{id}` |
+| RF05 busca com filtros | `GET /anuncios?q=&marca=&categoria=&tipoCaptacao=&condicao=&precoMin=&precoMax=&localizacao=&ordenar=` (marca, categoria, tipoCaptacao e condicao aceitam vários valores separados por vírgula) |
+| RF06 login obrigatório | Middleware `autenticar` (401 sem token) |
+| RF07 propostas de preço | `POST /ofertas`, `GET /ofertas`, `POST /ofertas/{id}/aceitar`, `/recusar` e `/contraproposta`; a proposta aceita vale 24h e é usada em `POST /pedidos` (`idOferta`) |
+| RF08 checkout e frete | `POST /frete/cotacao`, `POST /pedidos` |
+| RF09 chat | `POST /mensagens`, `GET /mensagens/conversas`, `GET /mensagens?com=` |
+| RF10 avaliações | `POST /pedidos/{id}/avaliacoes`, `GET /usuarios/{id}/avaliacoes` |
+| RF11 favoritos | `GET /favoritos`, `PUT` e `DELETE /favoritos/{idAnuncio}` |
+| RF12 denúncias | `POST /denuncias` |
+| RF13 catálogo mestre | `POST`, `PATCH` e `DELETE /instrumentos` (admin) |
+| RF14 remoção e banimento | `POST /admin/anuncios/{id}/remover`, `POST /admin/usuarios/{id}/banimento` |
+| RF15 disputas | `GET /admin/disputas`, `POST /admin/pedidos/{id}/resolucao` |
 | RN01 taxa de 7% | Calculada no checkout (`taxaPlataforma`, `valorRepasseVendedor`) |
 | RN02 liberação em 48h | Pedido `entregue` passa a `concluido` 48h após a entrega |
 | RN03 rastreio em 3 dias úteis | `prazoRastreio` e `rastreioAtrasado` no pedido; `POST /pedidos/{id}/rastreio` |
@@ -86,7 +86,7 @@ Fluxo de um pedido: `pago` → `enviado` (rastreio) → `entregue` (confirmaçã
 
 ## Decisões e limitações
 
-- **RF08 (propostas de preço)** não tem classe no diagrama; foi criada a classe `Oferta` (valor, status, expiraEm, comprador, autor, anúncio). Propostas pendentes e aceitas expiram em 24h. O vendedor pode desativar propostas no anúncio (`aceitaPropostas`).
+- **RF07 (propostas de preço)** não tem classe no diagrama; foi criada a classe `Oferta` (valor, status, expiraEm, comprador, autor, anúncio). Propostas pendentes e aceitas expiram em 24h. O vendedor pode desativar propostas no anúncio (`aceitaPropostas`).
 - **RN04 (segunda linha, "Lojas Profissionais")** contradiz a seção 2.4 (somente C2C) e foi ignorada.
 - **Pagamento, Pix e frete** funcionam em sandbox, como permite a seção 2.4. Para integrar de verdade, troque `src/services/pagamento.js` e `src/services/frete.js`.
 - **E-mail** (recuperação de senha, recibo) é simulado: fora de produção, o token volta na resposta.

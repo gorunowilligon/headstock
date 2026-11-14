@@ -16,7 +16,7 @@ function paraJsonSchema(schema) {
 }
 
 const respostasDeErro = {
-  usuario: { 401: { description: 'Login necessário (RF07)' } },
+  usuario: { 401: { description: 'Login necessário (RF06)' } },
   admin: { 401: { description: 'Login necessário' }, 403: { description: 'Restrito a administradores' } },
 }
 

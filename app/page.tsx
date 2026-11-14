@@ -17,7 +17,7 @@ import { filtrosVazios, paraQuery, type Filtros } from '@/lib/filtros'
 import type { AlvoConversa } from '@/components/detail/detail'
 import type { Anuncio, EdicaoAnuncio, Instrumento, NovaDenuncia, NovoAnuncio, UsuarioSessao } from '@/lib/models'
 
-// RF07: estas telas exigem login (ou cadastro).
+// RF06: estas telas exigem login (ou cadastro).
 const telasComLogin = ['sell', 'edit', 'chat', 'profile', 'favorites']
 
 type Aviso = { tipo: 'erro' | 'sucesso', texto: string }
