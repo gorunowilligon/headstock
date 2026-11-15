@@ -19,6 +19,11 @@ export function Header({ onNavigate, onSearch, logado }: { onNavigate: (view: st
     onNavigate(view)
   }
 
+  const atualizarBusca = (valor: string) => {
+    setTexto(valor)
+    onSearch(valor.trim())
+  }
+
   return (
     <header className="sticky top-0 z-20 border-b bg-white/95 backdrop-blur">
       <div className="mx-auto flex h-20 max-w-[1440px] items-center gap-3 px-4 sm:gap-5 sm:px-5 lg:px-10">
@@ -29,7 +34,12 @@ export function Header({ onNavigate, onSearch, logado }: { onNavigate: (view: st
         <form onSubmit={handleSearch} role="search" className="hidden flex-1 md:block">
           <div className="mx-auto flex max-w-2xl items-center rounded-xl border bg-gray-50 px-4 py-2.5">
             <Search className="mr-3 text-gray-400" />
-            <input value={texto} onChange={(e) => setTexto(e.target.value)} className="w-full bg-transparent text-sm outline-none" placeholder="O que você está procurando?" aria-label="Buscar anúncios" />
+            <input value={texto} onChange={(e) => atualizarBusca(e.target.value)} className="w-full bg-transparent text-sm outline-none" placeholder="O que você está procurando?" aria-label="Buscar anúncios" />
+            {texto && (
+              <button type="button" onClick={() => atualizarBusca('')} className="ml-2 text-gray-400 hover:text-gray-600" aria-label="Limpar busca">
+                <X className="size-4" />
+              </button>
+            )}
           </div>
         </form>
         <nav className="ml-auto flex items-center gap-1" aria-label="Navegação principal">
@@ -47,7 +57,7 @@ export function Header({ onNavigate, onSearch, logado }: { onNavigate: (view: st
         <div id="menu-movel" className="flex flex-col gap-3 border-t px-5 py-4 md:hidden">
           <form onSubmit={handleSearch} role="search" className="flex items-center rounded-xl border bg-gray-50 px-4 py-2.5">
             <Search className="mr-3 text-gray-400" />
-            <input value={texto} onChange={(e) => setTexto(e.target.value)} className="w-full bg-transparent text-sm outline-none" placeholder="O que você está procurando?" aria-label="Buscar anúncios" />
+            <input value={texto} onChange={(e) => atualizarBusca(e.target.value)} className="w-full bg-transparent text-sm outline-none" placeholder="O que você está procurando?" aria-label="Buscar anúncios" />
           </form>
           <Button onClick={() => ir('sell')} className="gap-2 bg-red-600 hover:bg-red-700"><Plus /> Criar anúncio</Button>
         </div>
