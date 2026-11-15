@@ -33,6 +33,7 @@ export function CheckoutDialog({ item, oferta, onClose, onConcluido }: {
   const [cep, setCep] = useState('')
   const [frete, setFrete] = useState<Frete | null>(null)
   const [metodo, setMetodo] = useState<'pix' | 'cartao'>('pix')
+  const [parcelas, setParcelas] = useState(10)
   const [carregando, setCarregando] = useState(false)
   const [erro, setErro] = useState('')
   const [compra, setCompra] = useState<RespostaCompra | null>(null)
@@ -125,6 +126,16 @@ export function CheckoutDialog({ item, oferta, onClose, onConcluido }: {
                 </label>
               ))}
             </div>
+            {metodo === 'cartao' && (
+              <label className="mt-3 block text-xs font-semibold text-gray-700">
+                Parcelamento no cartão
+                <select value={parcelas} onChange={(e) => setParcelas(Number(e.target.value))} className="mt-1 w-full rounded-lg border bg-white px-3 py-2 text-sm font-normal">
+                  {[1, 2, 3, 6, 10].map((n) => (
+                    <option key={n} value={n}>{n}x de {formatarMoeda((valorProduto + frete.valor) / n)} sem juros</option>
+                  ))}
+                </select>
+              </label>
+            )}
           </fieldset>
           <dl className="mt-5 flex flex-col gap-2 border-t pt-4 text-sm">
             <div className="flex justify-between"><dt>Produto</dt><dd>{formatarMoeda(valorProduto)}</dd></div>
