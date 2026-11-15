@@ -1,4 +1,4 @@
-export type Ordenacao = 'recentes' | 'menor_preco' | 'maior_preco'
+export type Ordenacao = 'relevantes' | 'recentes' | 'menor_preco' | 'maior_preco'
 
 export interface Filtros {
   categorias: string[]
@@ -23,6 +23,7 @@ export const filtrosVazios: Filtros = {
 }
 
 export const opcoesOrdenacao: { valor: Ordenacao, rotulo: string }[] = [
+  { valor: 'relevantes', rotulo: 'Mais relevantes' },
   { valor: 'recentes', rotulo: 'Mais recentes' },
   { valor: 'menor_preco', rotulo: 'Menor preço' },
   { valor: 'maior_preco', rotulo: 'Maior preço' },
@@ -41,6 +42,19 @@ export function contarFiltros(f: Filtros) {
 /** Limpa os filtros, mantendo a seção aberta e a ordenação. */
 export const limparFiltros = (f: Filtros): Filtros => ({ ...filtrosVazios, categorias: f.categorias, ordenar: f.ordenar })
 
+/** Valida os filtros antes de buscar os anúncios ativos (RF05). */
+export function validarFiltros(f: Filtros): string {
+  const min = f.precoMin.trim() === '' ? undefined : Number(f.precoMin)
+  const max = f.precoMax.trim() === '' ? undefined : Number(f.precoMax)
+  if ((min !== undefined && (Number.isNaN(min) || min < 0)) || (max !== undefined && (Number.isNaN(max) || max < 0))) {
+    return 'Informe valores de preço válidos (maiores ou iguais a zero).'
+  }
+  if (min !== undefined && max !== undefined && min > max) {
+    return 'O preço mínimo não pode ser maior que o preço máximo.'
+  }
+  return ''
+}
+
 /** Converte os filtros nos parâmetros de GET /anuncios (valores vazios são ignorados pelo cliente). */
 export function paraQuery(f: Filtros): Record<string, string | undefined> {
   return {
@@ -51,6 +65,6 @@ export function paraQuery(f: Filtros): Record<string, string | undefined> {
     precoMin: f.precoMin.trim(),
     precoMax: f.precoMax.trim(),
     localizacao: f.localizacao.trim(),
-    ordenar: f.ordenar,
+    ordenar: f.ordenar === 'relevantes' ? 'recentes' : f.ordenar,
   }
 }

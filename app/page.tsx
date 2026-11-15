@@ -13,7 +13,7 @@ import { Favorites } from '@/components/favorites/favorites'
 import { AuthForm } from '@/components/auth/auth-form'
 import { useSessao } from '@/hooks/use-session'
 import { api, mensagemDeErro } from '@/lib/api'
-import { filtrosVazios, paraQuery, type Filtros } from '@/lib/filtros'
+import { filtrosVazios, paraQuery, validarFiltros, type Filtros } from '@/lib/filtros'
 import type { AlvoConversa } from '@/components/detail/detail'
 import type { Anuncio, EdicaoAnuncio, Instrumento, NovaDenuncia, NovoAnuncio, UsuarioSessao } from '@/lib/models'
 
@@ -62,6 +62,12 @@ export default function Page() {
   // ---- Carregamento de dados ----------------------------------------------
 
   const carregarCatalogo = useCallback(async () => {
+    const erroValidacao = validarFiltros(filtros)
+    if (erroValidacao) {
+      setErroCatalogo(erroValidacao)
+      setCarregandoCatalogo(false)
+      return
+    }
     const numero = ++ultimaBusca.current
     try {
       const resposta = await api<{ itens: Anuncio[] }>('/anuncios', { query: { q: busca, porPagina: 100, ...paraQuery(filtros) } })
