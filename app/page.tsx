@@ -225,6 +225,7 @@ export default function Page() {
   const deleteListing = async (id: number) => {
     try {
       await api(`/anuncios/${id}`, { method: 'DELETE' })
+      setMeusAnuncios((prev) => prev.filter((anuncio) => anuncio.idAnuncio !== id))
       await recarregarTudo()
     } catch (erro) {
       avisarErro(erro, 'Não foi possível excluir o anúncio.')

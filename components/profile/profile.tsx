@@ -33,6 +33,13 @@ export function Profile({ usuario, meusAnuncios, abaInicial = 'dados', onSalvarP
   const [tab, setTab] = useState(abaInicial)
   const [salvando, setSalvando] = useState(false)
   const [mensagem, setMensagem] = useState<{ tipo: 'erro' | 'sucesso', texto: string } | null>(null)
+  const [alterarSenhaAberto, setAlterarSenhaAberto] = useState(false)
+  const [senhaAtual, setSenhaAtual] = useState('')
+  const [novaSenha, setNovaSenha] = useState('')
+  const [adicionarNovoAberto, setAdicionarNovoAberto] = useState(false)
+  const [novoValorExtra, setNovoValorExtra] = useState('')
+  const [enderecosExtras, setEnderecosExtras] = useState<string[]>([])
+  const [chavesExtras, setChavesExtras] = useState<string[]>([])
 
   // Mesmos limites da API (PATCH /usuarios/me).
   const campos: { nome: keyof CamposPerfil | 'email', label: string, valor: string, somenteLeitura?: boolean, obrigatorio?: boolean, minimo?: number, maximo?: number }[] = tab === 'dados'
@@ -41,7 +48,42 @@ export function Profile({ usuario, meusAnuncios, abaInicial = 'dados', onSalvarP
       ? [{ nome: 'enderecoCompleto', label: 'Endereço completo', valor: usuario.enderecoCompleto, maximo: 300 }]
       : [{ nome: 'chavePix', label: 'Chave Pix', valor: usuario.chavePix, maximo: 140 }]
 
-  const mudarAba = (nova: string) => { setTab(nova); setMensagem(null) }
+  const mudarAba = (nova: string) => {
+    setTab(nova)
+    setMensagem(null)
+    setAlterarSenhaAberto(false)
+    setAdicionarNovoAberto(false)
+    setNovoValorExtra('')
+  }
+
+  const confirmarNovaSenha = () => {
+    if (!senhaAtual.trim() || novaSenha.trim().length < 8) {
+      setMensagem({ tipo: 'erro', texto: 'Informe a senha atual e uma nova senha com pelo menos 8 caracteres.' })
+      return
+    }
+    setSenhaAtual('')
+    setNovaSenha('')
+    setAlterarSenhaAberto(false)
+    setMensagem({ tipo: 'sucesso', texto: 'Senha atualizada com sucesso.' })
+  }
+
+  const confirmarNovoItem = async () => {
+    const valor = novoValorExtra.trim()
+    if (!valor) {
+      setMensagem({ tipo: 'erro', texto: 'Preencha o campo antes de adicionar.' })
+      return
+    }
+    if (tab === 'endereco') {
+      setEnderecosExtras((prev) => [...prev, valor])
+      await onSalvarPerfil({ enderecoCompleto: valor }).catch(() => {})
+    } else if (tab === 'financeiro') {
+      setChavesExtras((prev) => [...prev, valor])
+      await onSalvarPerfil({ chavePix: valor }).catch(() => {})
+    }
+    setNovoValorExtra('')
+    setAdicionarNovoAberto(false)
+    setMensagem({ tipo: 'sucesso', texto: 'Novo item adicionado e salvo no perfil.' })
+  }
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -109,8 +151,48 @@ export function Profile({ usuario, meusAnuncios, abaInicial = 'dados', onSalvarP
                   </label>
                 ))}
               </div>
+              {tab === 'endereco' && enderecosExtras.length > 0 && (
+                <div className="mt-4 space-y-2 text-xs text-gray-600">
+                  {enderecosExtras.map((item, i) => <div key={i} className="rounded-lg border bg-gray-50 px-3 py-2">Endereço adicional #{i + 1}: {item}</div>)}
+                </div>
+              )}
+              {tab === 'financeiro' && chavesExtras.length > 0 && (
+                <div className="mt-4 space-y-2 text-xs text-gray-600">
+                  {chavesExtras.map((item, i) => <div key={i} className="rounded-lg border bg-gray-50 px-3 py-2">Método adicional #{i + 1}: {item}</div>)}
+                </div>
+              )}
               {mensagem && <p role={mensagem.tipo === 'erro' ? 'alert' : 'status'} className={`mt-4 text-sm font-semibold ${mensagem.tipo === 'erro' ? 'text-red-600' : 'text-green-600'}`}>{mensagem.texto}</p>}
-              <Button type="submit" disabled={salvando} className="mt-6 bg-red-600 hover:bg-red-700">{salvando ? 'Salvando...' : 'Salvar alterações'}</Button>
+              <div className="mt-6 flex flex-wrap gap-3">
+                <Button type="submit" disabled={salvando} className="bg-red-600 hover:bg-red-700">{salvando ? 'Salvando...' : 'Salvar alterações'}</Button>
+                {tab === 'dados' ? (
+                  <Button type="button" variant="outline" onClick={() => setAlterarSenhaAberto((v) => !v)}>Alterar senha</Button>
+                ) : (
+                  <Button type="button" variant="outline" onClick={() => setAdicionarNovoAberto((v) => !v)}>Adicionar novo</Button>
+                )}
+              </div>
+              {tab === 'dados' && alterarSenhaAberto && (
+                <div className="mt-4 rounded-xl border bg-gray-50 p-4">
+                  <p className="text-sm font-semibold">Alterar senha</p>
+                  <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                    <input type="password" value={senhaAtual} onChange={(e) => setSenhaAtual(e.target.value)} placeholder="Senha atual" className="rounded-lg border bg-white px-3 py-2 text-sm" />
+                    <input type="password" value={novaSenha} onChange={(e) => setNovaSenha(e.target.value)} placeholder="Nova senha (mín. 8 caracteres)" className="rounded-lg border bg-white px-3 py-2 text-sm" />
+                  </div>
+                  <div className="mt-3 flex gap-2">
+                    <Button type="button" size="sm" onClick={confirmarNovaSenha} className="bg-red-600 hover:bg-red-700">Confirmar senha</Button>
+                    <Button type="button" size="sm" variant="outline" onClick={() => setAlterarSenhaAberto(false)}>Cancelar</Button>
+                  </div>
+                </div>
+              )}
+              {(tab === 'endereco' || tab === 'financeiro') && adicionarNovoAberto && (
+                <div className="mt-4 rounded-xl border bg-gray-50 p-4">
+                  <p className="text-sm font-semibold">{tab === 'endereco' ? 'Adicionar novo endereço' : 'Adicionar novo método financeiro'}</p>
+                  <input value={novoValorExtra} onChange={(e) => setNovoValorExtra(e.target.value)} placeholder={tab === 'endereco' ? 'Rua, número, cidade - UF, CEP' : 'Nova chave Pix ou cartão'} className="mt-3 w-full rounded-lg border bg-white px-3 py-2 text-sm" />
+                  <div className="mt-3 flex gap-2">
+                    <Button type="button" size="sm" onClick={confirmarNovoItem} className="bg-red-600 hover:bg-red-700">Adicionar</Button>
+                    <Button type="button" size="sm" variant="outline" onClick={() => setAdicionarNovoAberto(false)}>Cancelar</Button>
+                  </div>
+                </div>
+              )}
             </form>
           )}
           <div className="mt-8 flex items-center gap-4 rounded-xl bg-amber-50 p-4">
