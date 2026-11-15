@@ -82,7 +82,11 @@ export function Chat({ idUsuario, alvoInicial, onComprado }: { idUsuario: number
     const todas: AlvoConversa[] = conversas.map((c) => ({ com: c.com, anuncio: c.anuncio }))
     if (selecionada && !todas.some((c) => chaveDe(c) === chaveDe(selecionada))) todas.unshift(selecionada)
     const termo = busca.trim().toLowerCase()
-    return todas.filter((c) => !termo || c.com.nome.toLowerCase().includes(termo) || c.anuncio?.titulo.toLowerCase().includes(termo))
+    return todas.filter((c) => {
+      if (!termo) return true
+      const ultima = conversas.find((conv) => chaveDe(conv) === chaveDe(c))?.ultimaMensagem?.conteudo ?? ''
+      return c.com.nome.toLowerCase().includes(termo) || c.anuncio?.titulo.toLowerCase().includes(termo) || ultima.toLowerCase().includes(termo)
+    })
   }, [conversas, selecionada, busca])
 
   const ultimaMensagem = (alvo: AlvoConversa) => conversas.find((c) => chaveDe(c) === chaveDe(alvo))?.ultimaMensagem
@@ -185,7 +189,7 @@ export function Chat({ idUsuario, alvoInicial, onComprado }: { idUsuario: number
                 </button>
               )
             })}
-            {lista.length === 0 && <p className="p-6 text-center text-sm text-gray-500">Nenhuma conversa ainda. Abra um anúncio e fale com o vendedor.</p>}
+            {lista.length === 0 && <p className="p-6 text-center text-sm text-gray-500">{busca.trim() ? `Nenhuma conversa encontrada para "${busca.trim()}".` : 'Nenhuma conversa ainda. Abra um anúncio e fale com o vendedor.'}</p>}
           </div>
         </aside>
 

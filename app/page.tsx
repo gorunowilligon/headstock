@@ -168,12 +168,22 @@ export default function Page() {
     if (!usuario) return pedirLogin(currentView)
     const jaFavorito = favoritos.includes(id)
     const anuncio = [...catalogo, ...meusAnuncios].find((a) => a.idAnuncio === id)
-    setFavoritosAnuncios((prev) => jaFavorito ? prev.filter((a) => a.idAnuncio !== id) : anuncio ? [anuncio, ...prev] : prev)
+    if (jaFavorito) {
+      setFavoritosAnuncios((prev) => prev.filter((a) => a.idAnuncio !== id))
+      try {
+        await api(`/favoritos/${id}`, { method: 'DELETE' })
+      } catch (erro) {
+        avisarErro(erro, 'Não foi possível remover dos favoritos.')
+        carregarMeusDados().catch(() => {})
+      }
+      return
+    }
+    if (anuncio) setFavoritosAnuncios((prev) => [anuncio, ...prev])
     try {
-      await api(`/favoritos/${id}`, { method: jaFavorito ? 'DELETE' : 'PUT' })
-    } catch (erro) {
-      avisarErro(erro, jaFavorito ? 'Não foi possível remover dos favoritos.' : 'Não foi possível salvar nos favoritos.')
-      carregarMeusDados().catch(() => {})
+      await api(`/favoritos/${id}`, { method: 'PUT' })
+    } catch {
+      avisar('erro', 'Não foi possível salvar nos favoritos.')
+      setFavoritosAnuncios((prev) => prev.filter((a) => a.idAnuncio !== id))
     }
   }
 
