@@ -45,6 +45,23 @@ export function OfferDialog({ titulo, precoAnuncio, valorAtual, onEnviar, onClos
           Preço anunciado: <strong>{formatarMoeda(precoAnuncio)}</strong>
           {valorAtual !== undefined && <> · Proposta atual: <strong>{formatarMoeda(valorAtual)}</strong></>}
         </p>
+        {Number.isFinite(precoAnuncio) && precoAnuncio > 0 && (
+          <div className="mt-3 flex flex-wrap gap-2">
+            {[0.95, 0.9, 0.85].map((fator) => {
+              const sugerido = Math.round(precoAnuncio * fator)
+              return (
+                <button
+                  key={fator}
+                  type="button"
+                  onClick={() => { setValor(String(sugerido)); setErro('') }}
+                  className="rounded-lg border bg-gray-50 px-2.5 py-1 text-xs font-semibold text-gray-700 hover:border-red-600 hover:text-red-600"
+                >
+                  {formatarMoeda(sugerido)} (-{Math.round((1 - fator) * 100)}%)
+                </button>
+              )
+            })}
+          </div>
+        )}
         <label className="mt-4 block text-sm font-semibold">
           Seu valor
           <div className="mt-2 flex items-center rounded-lg border px-3">
