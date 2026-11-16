@@ -1,3 +1,6 @@
+import { api } from '@/lib/api'
+import { paraQuery, type Filtros } from '@/lib/filtros'
+
 export interface Usuario {
   idUsuario: number
   nome: string
@@ -97,6 +100,24 @@ export interface Anuncio {
   descricao?: string // não consta no diagrama
   aceitaPropostas: boolean // não consta no diagrama (RF07)
   vendedor?: UsuarioPublico // preenchido pela API
+}
+
+/**
+ * Classe Anuncio do diagrama de classes. Os campos vêm da interface Anuncio acima
+ * (o TypeScript junta interface e classe com o mesmo nome).
+ */
+export class Anuncio {
+  /**
+   * anuncios = buscar(texto, filtros) : Anuncio[0..*] (RF05).
+   * Devolve null quando os filtros são inválidos; senão, só anúncios ativos que atendem
+   * aos filtros (GET /anuncios só devolve anúncios com status "ativo").
+   */
+  static async buscar(texto: string, filtros: Filtros): Promise<Anuncio[] | null> {
+    const validos = filtros.validar()
+    if (!validos) return null
+    const resposta = await api<{ itens: Anuncio[] }>('/anuncios', { query: { q: texto, porPagina: 100, ...paraQuery(filtros) } })
+    return resposta.itens
+  }
 }
 
 export interface Denuncia {

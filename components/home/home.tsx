@@ -6,17 +6,18 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Filters } from '@/components/home/filters'
 import { ProductCard } from '@/components/home/product-card'
-import { categoriasDoFiltro, contarFiltros, limparFiltros, opcoesOrdenacao, type Filtros, type Ordenacao } from '@/lib/filtros'
+import { categoriasDoFiltro, contarFiltros, limparFiltros, opcoesOrdenacao, type DadosFiltros, type Ordenacao } from '@/lib/filtros'
 import type { Anuncio, Instrumento } from '@/lib/models'
 
-export function Home({ catalogo, carregando, erro, onTentarNovamente, busca, filtros, onFiltrosChange, instrumentos, onOpen, favoritos, onToggleFavorite }: {
+export function Home({ catalogo, carregando, erro, aviso, onTentarNovamente, busca, filtros, onFiltrosChange, instrumentos, onOpen, favoritos, onToggleFavorite }: {
   catalogo: Anuncio[]
   carregando: boolean
   erro: string
+  aviso: string
   onTentarNovamente: () => void
   busca: string
-  filtros: Filtros
-  onFiltrosChange: (filtros: Filtros) => void
+  filtros: DadosFiltros
+  onFiltrosChange: (filtros: DadosFiltros) => void
   instrumentos: Instrumento[]
   onOpen: (id: number) => void
   favoritos: number[]
@@ -63,13 +64,13 @@ export function Home({ catalogo, carregando, erro, onTentarNovamente, busca, fil
           </div>
           {erro && (
             <div role="alert" className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-lg bg-red-50 p-4 text-sm font-semibold text-red-700">
-              <span>Não foi possível carregar os anúncios. {erro}</span>
+              <span>{erro}</span>
               <Button size="sm" variant="outline" onClick={onTentarNovamente}>Tentar novamente</Button>
             </div>
           )}
-          {!carregando && !erro && catalogo.length === 0 && (
+          {!carregando && aviso && (
             <div className="rounded-2xl border-2 border-dashed p-10 text-center text-sm text-gray-500">
-              <p className="font-semibold text-gray-700">{busca ? `Nenhum anúncio encontrado para "${busca}".` : secao ? `Nenhum anúncio em ${secao} no momento.` : 'Nenhum anúncio encontrado.'}</p>
+              <p className="font-semibold text-gray-700">{aviso}</p>
               {ativos > 0
                 ? <><p className="mt-1">Tente remover alguns filtros.</p><Button size="sm" variant="outline" onClick={() => onFiltrosChange(limparFiltros(filtros))} className="mt-4">Limpar filtros</Button></>
                 : busca ? <p className="mt-1">Confira a ortografia ou tente termos mais gerais, como a marca ou o tipo de instrumento.</p> : <p className="mt-1">Ainda não há instrumentos anunciados. Volte mais tarde!</p>}

@@ -1,6 +1,7 @@
-export type Ordenacao = 'relevantes' | 'recentes' | 'menor_preco' | 'maior_preco'
+export type Ordenacao = 'recentes' | 'menor_preco' | 'maior_preco'
 
-export interface Filtros {
+/** Valores dos filtros guardados no estado da tela (dados, sem métodos). */
+export interface DadosFiltros {
   categorias: string[]
   marcas: string[]
   condicoes: string[]
@@ -11,7 +12,7 @@ export interface Filtros {
   ordenar: Ordenacao
 }
 
-export const filtrosVazios: Filtros = {
+export const filtrosVazios: DadosFiltros = {
   categorias: [],
   marcas: [],
   condicoes: [],
@@ -23,7 +24,6 @@ export const filtrosVazios: Filtros = {
 }
 
 export const opcoesOrdenacao: { valor: Ordenacao, rotulo: string }[] = [
-  { valor: 'relevantes', rotulo: 'Mais relevantes' },
   { valor: 'recentes', rotulo: 'Mais recentes' },
   { valor: 'menor_preco', rotulo: 'Menor preço' },
   { valor: 'maior_preco', rotulo: 'Maior preço' },
@@ -34,29 +34,53 @@ export const categoriasDoFiltro = ['Guitarras', 'Baixos', 'Violões', 'Amplifica
 export const condicoesDoFiltro = ['Novo', 'Seminovo', 'Usado']
 
 /** Quantidade de filtros ativos. Ordenação e seção (categoria) não contam: a seção é uma aba, não um filtro. */
-export function contarFiltros(f: Filtros) {
+export function contarFiltros(f: DadosFiltros) {
   return f.marcas.length + f.condicoes.length + f.tiposCaptacao.length
     + (f.precoMin || f.precoMax ? 1 : 0) + (f.localizacao.trim() ? 1 : 0)
 }
 
 /** Limpa os filtros, mantendo a seção aberta e a ordenação. */
-export const limparFiltros = (f: Filtros): Filtros => ({ ...filtrosVazios, categorias: f.categorias, ordenar: f.ordenar })
+export const limparFiltros = (f: DadosFiltros): DadosFiltros => ({ ...filtrosVazios, categorias: f.categorias, ordenar: f.ordenar })
 
-/** Valida os filtros antes de buscar os anúncios ativos (RF05). */
-export function validarFiltros(f: Filtros): string {
-  const min = f.precoMin.trim() === '' ? undefined : Number(f.precoMin)
-  const max = f.precoMax.trim() === '' ? undefined : Number(f.precoMax)
-  if ((min !== undefined && (Number.isNaN(min) || min < 0)) || (max !== undefined && (Number.isNaN(max) || max < 0))) {
-    return 'Informe valores de preço válidos (maiores ou iguais a zero).'
+/**
+ * Classe Filtros do diagrama de classes (RF05).
+ * É criada a partir dos dados da tela no momento da busca (new Filtros(dados)),
+ * porque o estado do React é copiado com {...filtros} e a cópia perderia os métodos.
+ */
+export class Filtros implements DadosFiltros {
+  categorias: string[]
+  marcas: string[]
+  condicoes: string[]
+  tiposCaptacao: string[]
+  precoMin: string
+  precoMax: string
+  localizacao: string
+  ordenar: Ordenacao
+
+  constructor(dados: DadosFiltros) {
+    this.categorias = dados.categorias
+    this.marcas = dados.marcas
+    this.condicoes = dados.condicoes
+    this.tiposCaptacao = dados.tiposCaptacao
+    this.precoMin = dados.precoMin
+    this.precoMax = dados.precoMax
+    this.localizacao = dados.localizacao
+    this.ordenar = dados.ordenar
   }
-  if (min !== undefined && max !== undefined && min > max) {
-    return 'O preço mínimo não pode ser maior que o preço máximo.'
+
+  /** validos = validar() : boolean — preços vazios ou maiores ou iguais a zero, e mínimo menor ou igual ao máximo. */
+  validar(): boolean {
+    const min = this.precoMin.trim() === '' ? undefined : Number(this.precoMin)
+    const max = this.precoMax.trim() === '' ? undefined : Number(this.precoMax)
+    if (min !== undefined && (Number.isNaN(min) || min < 0)) return false
+    if (max !== undefined && (Number.isNaN(max) || max < 0)) return false
+    if (min !== undefined && max !== undefined && min > max) return false
+    return true
   }
-  return ''
 }
 
 /** Converte os filtros nos parâmetros de GET /anuncios (valores vazios são ignorados pelo cliente). */
-export function paraQuery(f: Filtros): Record<string, string | undefined> {
+export function paraQuery(f: DadosFiltros): Record<string, string | undefined> {
   return {
     categoria: f.categorias.join(','),
     marca: f.marcas.join(','),
@@ -65,6 +89,6 @@ export function paraQuery(f: Filtros): Record<string, string | undefined> {
     precoMin: f.precoMin.trim(),
     precoMax: f.precoMax.trim(),
     localizacao: f.localizacao.trim(),
-    ordenar: f.ordenar === 'relevantes' ? 'recentes' : f.ordenar,
+    ordenar: f.ordenar,
   }
 }

@@ -1,5 +1,5 @@
 import { Filter } from '@/components/home/filter'
-import { categoriasDoFiltro, condicoesDoFiltro, contarFiltros, limparFiltros, type Filtros } from '@/lib/filtros'
+import { categoriasDoFiltro, condicoesDoFiltro, contarFiltros, limparFiltros, type DadosFiltros } from '@/lib/filtros'
 import type { Instrumento } from '@/lib/models'
 
 const unicos = (valores: string[]) => [...new Set(valores.filter(Boolean))].sort((a, b) => a.localeCompare(b, 'pt-BR'))
@@ -8,7 +8,7 @@ const captacoesPadrao = ['Humbucker', 'Single Coil', 'HSS', 'HSH', 'P90', 'Piezo
 
 type ListaFiltro = 'categorias' | 'marcas' | 'condicoes' | 'tiposCaptacao'
 
-export function Filters({ filtros, onChange, instrumentos, aberto }: { filtros: Filtros, onChange: (filtros: Filtros) => void, instrumentos: Instrumento[], aberto: boolean }) {
+export function Filters({ filtros, onChange, instrumentos, aberto }: { filtros: DadosFiltros, onChange: (filtros: DadosFiltros) => void, instrumentos: Instrumento[], aberto: boolean }) {
   // Marcas e captações oferecidas são as da seção aberta (com fallback padrão caso o catálogo mestre ainda esteja carregando).
   const daSecao = filtros.categorias.length ? instrumentos.filter((i) => filtros.categorias.includes(i.categoria)) : instrumentos
   const marcasExtraidas = unicos(daSecao.map((i) => i.marca))

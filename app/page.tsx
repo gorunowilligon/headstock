@@ -13,9 +13,10 @@ import { Favorites } from '@/components/favorites/favorites'
 import { AuthForm } from '@/components/auth/auth-form'
 import { useSessao } from '@/hooks/use-session'
 import { api, mensagemDeErro } from '@/lib/api'
-import { filtrosVazios, paraQuery, validarFiltros, type Filtros } from '@/lib/filtros'
+import { Filtros, filtrosVazios, type DadosFiltros } from '@/lib/filtros'
 import type { AlvoConversa } from '@/components/detail/detail'
-import type { Anuncio, EdicaoAnuncio, Instrumento, NovaDenuncia, NovoAnuncio, UsuarioSessao } from '@/lib/models'
+import { Anuncio } from '@/lib/models'
+import type { EdicaoAnuncio, Instrumento, NovaDenuncia, NovoAnuncio, UsuarioSessao } from '@/lib/models'
 
 // RF06: estas telas exigem login (ou cadastro).
 const telasComLogin = ['sell', 'edit', 'chat', 'profile', 'favorites']
@@ -35,13 +36,14 @@ export default function Page() {
   const [alvoChat, setAlvoChat] = useState<AlvoConversa | null>(null)
   const [anuncioSelecionadoId, setAnuncioSelecionadoId] = useState<number | null>(null)
   const [busca, setBusca] = useState('')
-  const [filtros, setFiltros] = useState<Filtros>(filtrosVazios)
+  const [filtros, setFiltros] = useState<DadosFiltros>(filtrosVazios)
   const ultimaBusca = useRef(0)
   const [aviso, setAviso] = useState<Aviso | null>(null)
 
   const [catalogo, setCatalogo] = useState<Anuncio[]>([])
   const [carregandoCatalogo, setCarregandoCatalogo] = useState(true)
   const [erroCatalogo, setErroCatalogo] = useState('')
+  const [avisoCatalogo, setAvisoCatalogo] = useState('')
   const [catalogoMestre, setCatalogoMestre] = useState<Instrumento[]>([])
   const [meusAnuncios, setMeusAnuncios] = useState<Anuncio[]>([])
   const [favoritosAnuncios, setFavoritosAnuncios] = useState<Anuncio[]>([])
@@ -61,25 +63,45 @@ export default function Page() {
 
   // ---- Carregamento de dados ----------------------------------------------
 
-  const carregarCatalogo = useCallback(async () => {
-    const erroValidacao = validarFiltros(filtros)
-    if (erroValidacao) {
-      setErroCatalogo(erroValidacao)
-      setCarregandoCatalogo(false)
-      return
-    }
+  // ---- TelaInicial (RF05): operações do diagrama de sequência ---------------
+
+  const notificar = useCallback((mensagem: string) => {
+    setErroCatalogo(mensagem)
+    setAvisoCatalogo('')
+    setCatalogo([])
+  }, [])
+
+  const exibirAviso = useCallback((mensagem: string) => {
+    setErroCatalogo('')
+    setAvisoCatalogo(mensagem)
+    setCatalogo([])
+  }, [])
+
+  const exibirCards = useCallback((anuncios: Anuncio[]) => {
+    setErroCatalogo('')
+    setAvisoCatalogo('')
+    setCatalogo(anuncios)
+  }, [])
+
+  /** buscar(texto, filtros): chama Anuncio.buscar e segue o fragmento alt do diagrama de sequência. */
+  const buscar = useCallback(async (texto: string, dados: DadosFiltros) => {
+    // O número é tirado antes de qualquer retorno, para que uma resposta antiga nunca sobrescreva a busca atual.
     const numero = ++ultimaBusca.current
     try {
-      const resposta = await api<{ itens: Anuncio[] }>('/anuncios', { query: { q: busca, porPagina: 100, ...paraQuery(filtros) } })
+      const anuncios = await Anuncio.buscar(texto, new Filtros(dados))
       if (numero !== ultimaBusca.current) return // uma busca mais nova já foi disparada
-      setCatalogo(resposta.itens)
-      setErroCatalogo('')
+      if (anuncios === null) notificar('Não foi possível carregar os anúncios.')
+      else if (anuncios.length === 0) exibirAviso('Nenhum anúncio encontrado.')
+      else exibirCards(anuncios)
     } catch (erro) {
-      if (numero === ultimaBusca.current) setErroCatalogo(mensagemDeErro(erro))
+      // Falha de conexão ou do servidor (fora do diagrama): mesma notificação, com o motivo.
+      if (numero === ultimaBusca.current) notificar(`Não foi possível carregar os anúncios. ${mensagemDeErro(erro)}`)
     } finally {
       if (numero === ultimaBusca.current) setCarregandoCatalogo(false)
     }
-  }, [busca, filtros])
+  }, [notificar, exibirAviso, exibirCards])
+
+  const carregarCatalogo = useCallback(() => buscar(busca, filtros), [buscar, busca, filtros])
 
   const carregarMeusDados = useCallback(async () => {
     const [meus, favs] = await Promise.all([api<Anuncio[]>('/anuncios/meus'), api<Anuncio[]>('/favoritos')])
@@ -151,7 +173,7 @@ export default function Page() {
     setCurrentView('home')
   }
 
-  const buscar = (texto: string) => {
+  const pesquisarTexto = (texto: string) => {
     setBusca(texto)
     setCurrentView('home')
   }
@@ -254,14 +276,14 @@ export default function Page() {
   }
 
   const renderHome = () => (
-    <Home catalogo={catalogo} carregando={carregandoCatalogo} erro={erroCatalogo} onTentarNovamente={carregarCatalogo} busca={busca} filtros={filtros} onFiltrosChange={setFiltros} instrumentos={catalogoMestre} onOpen={openDetail} favoritos={favoritos} onToggleFavorite={toggleFavorite} />
+    <Home catalogo={catalogo} carregando={carregandoCatalogo} erro={erroCatalogo} aviso={avisoCatalogo} onTentarNovamente={carregarCatalogo} busca={busca} filtros={filtros} onFiltrosChange={setFiltros} instrumentos={catalogoMestre} onOpen={openDetail} favoritos={favoritos} onToggleFavorite={toggleFavorite} />
   )
 
   return (
     // Coluna flex: o conteúdo ocupa a altura que sobra e o rodapé fica sempre no fim da tela,
     // mesmo em páginas curtas (favoritos vazios, abas pequenas do perfil).
     <div className="flex min-h-screen flex-col bg-white text-gray-950">
-      <Header onNavigate={navegar} onSearch={buscar} logado={Boolean(usuario)} />
+      <Header onNavigate={navegar} onSearch={pesquisarTexto} logado={Boolean(usuario)} />
       {aviso && (
         <div role={aviso.tipo === 'erro' ? 'alert' : 'status'} className={`px-5 py-3 text-center text-sm font-semibold ${aviso.tipo === 'erro' ? 'bg-red-50 text-red-700' : 'bg-green-50 text-green-700'}`}>
           {aviso.texto}
