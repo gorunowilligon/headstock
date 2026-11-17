@@ -11,6 +11,7 @@ import { Chat, conversaNaoLida } from '@/components/chat/chat'
 import { Profile } from '@/components/profile/profile'
 import { Favorites } from '@/components/favorites/favorites'
 import { AuthForm } from '@/components/auth/auth-form'
+import { Admin } from '@/components/admin/admin'
 import { useSessao } from '@/hooks/use-session'
 import { api, mensagemDeErro } from '@/lib/api'
 import { categoriasDoFiltro, Filtros, filtrosVazios, type DadosFiltros } from '@/lib/filtros'
@@ -19,7 +20,7 @@ import { Anuncio } from '@/lib/models'
 import type { Conversa, EdicaoAnuncio, Instrumento, NovaDenuncia, NovoAnuncio, Pedido, UsuarioSessao } from '@/lib/models'
 
 // RF06: estas telas exigem login (ou cadastro).
-const telasComLogin = ['sell', 'edit', 'chat', 'profile', 'favorites']
+const telasComLogin = ['sell', 'edit', 'chat', 'profile', 'favorites', 'admin']
 const INTERVALO_CONVERSAS = 10000
 
 const caminhoParaTela: Record<string, string> = {
@@ -29,6 +30,7 @@ const caminhoParaTela: Record<string, string> = {
   '/perfil': 'profile',
   '/favoritos': 'favorites',
   '/entrar': 'login',
+  '/admin': 'admin',
 }
 
 const telaParaCaminho: Record<string, string> = {
@@ -38,6 +40,7 @@ const telaParaCaminho: Record<string, string> = {
   profile: '/perfil',
   favorites: '/favoritos',
   login: '/entrar',
+  admin: '/admin',
 }
 
 function lerRotaDaUrl(pathname: string): { view: string, idAnuncio: number | null } {
@@ -437,6 +440,20 @@ export default function Page() {
     if (currentView === 'chat') return <Chat key={alvoChat ? `${alvoChat.com.idUsuario}:${alvoChat.anuncio?.idAnuncio}` : 'chat'} idUsuario={usuario.idUsuario} alvoInicial={alvoChat} conversasIniciais={conversas} onComprado={aposComprar} lidas={mensagensLidas} onMarcarLida={marcarMensagemLida} onConversasChange={setConversas} />
     if (currentView === 'profile') return <Profile key={abaPerfil} abaInicial={abaPerfil} usuario={usuario} meusAnuncios={meusAnuncios.filter((anuncio) => anuncio.status !== 'removido')} pedidosComprador={pedidosComprador} pedidosVendedor={pedidosVendedor} onPedidosCompradorChange={setPedidosComprador} onPedidosVendedorChange={setPedidosVendedor} onSalvarPerfil={salvarPerfil} onSair={sair} onEditListing={editListing} onTogglePause={togglePause} onDeleteListing={deleteListing} />
     if (currentView === 'favorites') return <Favorites catalogo={favoritosAnuncios} onOpen={openDetail} onBrowse={() => setCurrentView('home')} favoritos={favoritos} onToggleFavorite={toggleFavorite} />
+    if (currentView === 'admin' && usuario.tipo === 'administrador') {
+      return (
+        <Admin
+          usuario={usuario}
+          catalogoMestre={catalogoMestre}
+          onCatalogoMestreChange={setCatalogoMestre}
+          onAbrirAnuncio={openDetail}
+          onAnuncioModerado={() => {
+            Anuncio.invalidarCache()
+            carregarCatalogo().catch(() => {})
+          }}
+        />
+      )
+    }
     return renderHome()
   }
 
@@ -448,7 +465,7 @@ export default function Page() {
     // Coluna flex: o conteúdo ocupa a altura que sobra e o rodapé fica sempre no fim da tela,
     // mesmo em páginas curtas (favoritos vazios, abas pequenas do perfil).
     <div className="flex min-h-screen flex-col bg-white text-gray-950">
-      <Header onNavigate={navegar} onSearch={pesquisarTexto} logado={Boolean(usuario)} temNotificacaoChat={temNotificacaoChat} />
+      <Header onNavigate={navegar} onSearch={pesquisarTexto} logado={Boolean(usuario)} ehAdmin={usuario?.tipo === 'administrador'} temNotificacaoChat={temNotificacaoChat} />
       {aviso && (
         <div role={aviso.tipo === 'erro' ? 'alert' : 'status'} className={`px-5 py-3 text-center text-sm font-semibold ${aviso.tipo === 'erro' ? 'bg-red-50 text-red-700' : 'bg-green-50 text-green-700'}`}>
           {aviso.texto}

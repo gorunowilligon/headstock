@@ -9,6 +9,21 @@ const rotas = criarRouter('/admin', 'Administração')
 
 // ---------------------------------------------------------------- Denúncias
 
+const denunciaInclude = {
+  autor: { select: { idUsuario: true, nome: true } },
+  anuncio: { select: { idAnuncio: true, titulo: true, status: true, vendedor: { select: { idUsuario: true, nome: true, banido: true } } } },
+  usuarioDenunciado: { select: { idUsuario: true, nome: true, banido: true } },
+  mensagem: { select: { idMensagem: true, conteudo: true, idRemetente: true, remetente: { select: { idUsuario: true, nome: true, banido: true } } } },
+}
+
+const serializarDenunciaAdmin = (d) => ({
+  ...serializarDenuncia(d),
+  autor: d.autor,
+  anuncio: d.anuncio,
+  usuarioDenunciado: d.usuarioDenunciado,
+  mensagem: d.mensagem,
+})
+
 rotas.get('/denuncias', {
   resumo: 'Fila de denúncias para moderação',
   auth: 'admin',
@@ -16,21 +31,10 @@ rotas.get('/denuncias', {
   handler: async ({ query }) => {
     const denuncias = await prisma.denuncia.findMany({
       where: query.status ? { status: query.status } : {},
-      include: {
-        autor: { select: { idUsuario: true, nome: true } },
-        anuncio: { select: { idAnuncio: true, titulo: true, status: true } },
-        usuarioDenunciado: { select: { idUsuario: true, nome: true, banido: true } },
-        mensagem: { select: { idMensagem: true, conteudo: true, idRemetente: true } },
-      },
+      include: denunciaInclude,
       orderBy: { dataCriacao: 'asc' },
     })
-    return denuncias.map((d) => ({
-      ...serializarDenuncia(d),
-      autor: d.autor,
-      anuncio: d.anuncio,
-      usuarioDenunciado: d.usuarioDenunciado,
-      mensagem: d.mensagem,
-    }))
+    return denuncias.map(serializarDenunciaAdmin)
   },
 })
 
@@ -47,8 +51,9 @@ rotas.patch('/denuncias/:id', {
     const denuncia = await prisma.denuncia.update({
       where: { idDenuncia: params.id },
       data: { ...body, idAdministrador: usuario.idUsuario },
+      include: denunciaInclude,
     })
-    return serializarDenuncia(denuncia)
+    return serializarDenunciaAdmin(denuncia)
   },
 })
 

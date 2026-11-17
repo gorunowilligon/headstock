@@ -1,10 +1,10 @@
 'use client'
 
 import { useState, type FormEvent } from 'react'
-import { Guitar, Heart, LogIn, Menu, MessageCircle, Plus, Search, UserRound, X } from 'lucide-react'
+import { Guitar, Heart, LogIn, Menu, MessageCircle, Plus, Search, ShieldAlert, UserRound, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
-export function Header({ onNavigate, onSearch, logado, temNotificacaoChat = false }: { onNavigate: (view: string) => void, onSearch: (texto: string) => void, logado: boolean, temNotificacaoChat?: boolean }) {
+export function Header({ onNavigate, onSearch, logado, ehAdmin = false, temNotificacaoChat = false }: { onNavigate: (view: string) => void, onSearch: (texto: string) => void, logado: boolean, ehAdmin?: boolean, temNotificacaoChat?: boolean }) {
   const [texto, setTexto] = useState('')
   const [menuAberto, setMenuAberto] = useState(false)
 
@@ -43,6 +43,16 @@ export function Header({ onNavigate, onSearch, logado, temNotificacaoChat = fals
           </div>
         </form>
         <nav className="ml-auto flex items-center gap-1" aria-label="Navegação principal">
+          {ehAdmin && (
+            <button
+              type="button"
+              onClick={() => onNavigate('admin')}
+              className="mr-1 inline-flex items-center gap-1.5 rounded-none border border-slate-700 bg-slate-900 px-2.5 py-1.5 font-mono text-xs font-bold uppercase tracking-wider text-amber-400 hover:bg-slate-800"
+              aria-label="Painel administrativo"
+            >
+              <ShieldAlert className="size-4" /> <span className="hidden sm:inline">Admin</span>
+            </button>
+          )}
           <Button variant="ghost" size="icon" onClick={() => onNavigate('favorites')} aria-label="Favoritos"><Heart /></Button>
           <Button variant="ghost" size="icon" onClick={() => onNavigate('chat')} className="relative" aria-label={temNotificacaoChat ? 'Mensagens (há mensagens não lidas)' : 'Mensagens'}>
             <MessageCircle />

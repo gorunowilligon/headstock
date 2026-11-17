@@ -35,6 +35,7 @@ export interface UsuarioSessao extends UsuarioPublico {
   email: string
   chavePix: string
   enderecoCompleto: string
+  nivelAcesso?: number
   banido: boolean
 }
 
@@ -136,13 +137,33 @@ export class Anuncio {
   }
 }
 
+export type StatusDenuncia = 'aberta' | 'em_analise' | 'resolvida' | 'descartada'
+
 export interface Denuncia {
   idDenuncia: number
   motivo: string
   descricaoTextual: string
-  status: 'aberta' | 'em análise' | 'resolvida'
+  status: StatusDenuncia
   idAutor: number
   idAnuncio: number // não consta no diagrama
+}
+
+export interface DenunciaAdmin {
+  idDenuncia: number
+  motivo: string
+  descricaoTextual: string
+  status: StatusDenuncia
+  dataCriacao: string
+  resolucao: string | null
+  idAutor: number
+  idAdministrador: number | null
+  idAnuncio: number | null
+  idUsuarioDenunciado: number | null
+  idMensagem: number | null
+  autor?: { idUsuario: number, nome: string }
+  anuncio?: { idAnuncio: number, titulo: string, status: StatusAnuncio, vendedor?: { idUsuario: number, nome: string, banido: boolean } } | null
+  usuarioDenunciado?: { idUsuario: number, nome: string, banido: boolean } | null
+  mensagem?: { idMensagem: number, conteudo: string, idRemetente: number, remetente?: { idUsuario: number, nome: string, banido: boolean } } | null
 }
 
 export type StatusPedido = 'pago' | 'enviado' | 'entregue' | 'concluido' | 'em_disputa' | 'devolucao_autorizada' | 'reembolsado' | 'cancelado'
