@@ -1,4 +1,4 @@
-import { api, mensagemDeErro } from '@/lib/api'
+import { api, mensagemDeErro, urlFoto } from '@/lib/api'
 import type { FotoAnuncio } from '@/lib/models'
 import { redimensionarImagem } from '@/lib/resize-image'
 
@@ -11,7 +11,10 @@ const BYTES_POR_MB = 1024 * 1024
  * Valida cada arquivo (imagem de até 5 MB), reduz no navegador e envia ao servidor, uma foto por vez
  * (a Vercel limita cada requisição a 4,5 MB). Devolve as fotos já salvas e as mensagens de erro.
  */
-export async function processarFotos(files: File[]): Promise<{ fotos: FotoAnuncio[], erros: string[] }> {
+export async function processarFotos(
+  files: File[],
+  aoEnviarFoto?: (foto: FotoAnuncio) => void,
+): Promise<{ fotos: FotoAnuncio[], erros: string[] }> {
   const erros: string[] = []
   const fotos: FotoAnuncio[] = []
 
@@ -30,7 +33,9 @@ export async function processarFotos(files: File[]): Promise<{ fotos: FotoAnunci
       const formData = new FormData()
       formData.append('fotos', reduzida, `${file.name.replace(/\.[^.]+$/, '')}.jpg`)
       const [foto] = await api<FotoAnuncio[]>('/fotos', { method: 'POST', formData })
-      fotos.push(foto)
+      const normalizada = { ...foto, url: urlFoto(foto.url) }
+      fotos.push(normalizada)
+      aoEnviarFoto?.(normalizada)
     } catch (erro) {
       erros.push(`"${file.name}": ${mensagemDeErro(erro)}`)
     }

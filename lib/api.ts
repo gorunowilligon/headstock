@@ -1,7 +1,13 @@
 // Cliente HTTP da API do Headstock (backend/). Toda comunicação passa por aqui (RNF05).
 
-const BASE_URL = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3333').replace(/\/$/, '')
+export const BASE_URL = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3333').replace(/\/$/, '')
 const TOKEN_KEY = 'headstock:token'
+
+/** Garante que fotos servidas pela API (/fotos/:id) apontem sempre para BASE_URL. */
+export function urlFoto(url: string): string {
+  const match = url.match(/(?:^|https?:\/\/[^/]+)(\/fotos\/\d+(?:[?#].*)?)$/)
+  return match ? `${BASE_URL}${match[1]}` : url
+}
 
 export class ApiError extends Error {
   status: number

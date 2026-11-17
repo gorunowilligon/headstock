@@ -4,7 +4,7 @@ import { useState, type FormEvent } from 'react'
 import { Button } from '@/components/ui/button'
 import { CategoryFields } from '@/components/sell/category-fields'
 import { GlobalSpecFields } from '@/components/sell/global-spec-fields'
-import { PhotoUploader } from '@/components/sell/photo-uploader'
+import { PhotoUploader, type AtualizadorFotos } from '@/components/sell/photo-uploader'
 import { mensagemDeErro } from '@/lib/api'
 import { categorias, type Categoria } from '@/lib/categories'
 import { lerEspecificacoes } from '@/lib/especificacoes'
@@ -14,6 +14,7 @@ import { validarFormulario } from '@/lib/validacao'
 
 export function Sell({ catalogoMestre, localizacaoPadrao, onPublish }: { catalogoMestre: Instrumento[], localizacaoPadrao: string, onPublish: (anuncio: NovoAnuncio) => Promise<void> }) {
   const [enviando, setEnviando] = useState(false)
+  const [enviandoFotos, setEnviandoFotos] = useState(false)
   const [erroEnvio, setErroEnvio] = useState('')
   const [price, setPrice] = useState('')
   const [preencherManual, setPreencherManual] = useState(false)
@@ -22,13 +23,20 @@ export function Sell({ catalogoMestre, localizacaoPadrao, onPublish }: { catalog
   const [erroFotos, setErroFotos] = useState('')
   const value = Number(price) || 0
 
-  const atualizarFotos = (novas: FotoAnuncio[]) => {
-    setFotos(novas)
-    if (novas.length >= MIN_FOTOS) setErroFotos('')
+  const atualizarFotos = (novasOuFn: AtualizadorFotos) => {
+    setFotos((atuais) => {
+      const novas = typeof novasOuFn === 'function' ? novasOuFn(atuais) : novasOuFn
+      if (novas.length >= MIN_FOTOS) setErroFotos('')
+      return novas
+    })
   }
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
+    if (enviandoFotos) {
+      setErroEnvio('Aguarde o término do envio das fotos antes de publicar.')
+      return
+    }
     const faltamFotos = fotos.length < MIN_FOTOS
     setErroFotos(faltamFotos ? mensagemFotosInsuficientes(fotos.length) : '')
     const problema = validarFormulario(e.currentTarget, faltamFotos ? [mensagemFotosInsuficientes(fotos.length)] : [])
@@ -86,7 +94,7 @@ export function Sell({ catalogoMestre, localizacaoPadrao, onPublish }: { catalog
           <div className="flex flex-col gap-6">
             <section id="secao-fotos" className="rounded-2xl border bg-white p-6">
               <h2 className="mb-1 text-lg font-bold">1. Fotos do instrumento</h2>
-              <PhotoUploader fotos={fotos} onChange={atualizarFotos} erro={erroFotos} />
+              <PhotoUploader fotos={fotos} onChange={atualizarFotos} onEnviandoChange={setEnviandoFotos} erro={erroFotos} />
             </section>
             <section className="rounded-2xl border bg-white p-6">
               <h2 className="mb-5 text-lg font-bold">2. O que você está vendendo?</h2>
@@ -168,7 +176,7 @@ export function Sell({ catalogoMestre, localizacaoPadrao, onPublish }: { catalog
               </div>
             </div>
             {erroEnvio && <p role="alert" className="mt-5 text-sm font-semibold text-red-600">{erroEnvio}</p>}
-            <Button type="submit" disabled={enviando} className="mt-7 w-full bg-red-600 hover:bg-red-700">{enviando ? 'Publicando...' : 'Publicar anúncio'}</Button>
+            <Button type="submit" disabled={enviando || enviandoFotos} className="mt-7 w-full bg-red-600 hover:bg-red-700">{enviando ? 'Publicando...' : enviandoFotos ? 'Enviando fotos...' : 'Publicar anúncio'}</Button>
           </aside>
         </form>
       </div>

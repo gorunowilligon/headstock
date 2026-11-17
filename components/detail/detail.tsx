@@ -9,7 +9,7 @@ import { OfferDialog } from '@/components/checkout/offer-dialog'
 import { ReportDialog } from '@/components/detail/report-dialog'
 import { Spec } from '@/components/detail/spec'
 import { capaDoAnuncio } from '@/lib/anuncio'
-import { api, mensagemDeErro } from '@/lib/api'
+import { api, mensagemDeErro, urlFoto } from '@/lib/api'
 import { linhasEspecificacoes } from '@/lib/especificacoes'
 import type { Anuncio, NovaDenuncia, Pedido } from '@/lib/models'
 import { formatarPreco } from '@/lib/price'
@@ -45,7 +45,7 @@ export function Detail({ anuncio, idUsuarioLogado, onBack, onReport, onRequireLo
   const [descricaoTextual, setDescricaoTextual] = useState('')
   const [reportSent, setReportSent] = useState(false)
   const [enviandoDenuncia, setEnviandoDenuncia] = useState(false)
-  const photos = anuncio.fotos.length ? anuncio.fotos.map((foto) => foto.url) : ['/placeholder.jpg']
+  const photos = anuncio.fotos.length ? anuncio.fotos.map((foto) => urlFoto(foto.url)) : ['/placeholder.jpg']
   const parcela = anuncio.preco / 10
 
   useEffect(() => {
