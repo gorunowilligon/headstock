@@ -63,6 +63,8 @@ const rotulosDosCampos: Record<string, string> = {
   condicao: 'Condição do item',
   preco: 'Valor do anúncio',
   localizacao: 'Localização',
+  uf: 'Estado (UF)',
+  cidade: 'Cidade',
   descricao: 'Descrição',
   fotos: 'Fotos',
   idInstrumentoCatalogo: 'Instrumento',

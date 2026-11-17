@@ -15,10 +15,12 @@ const listaDeFotos = z.array(idNumerico)
   .refine((ids) => new Set(ids).size === ids.length, 'A lista de fotos tem itens repetidos')
   .describe('IDs das fotos enviadas em POST /fotos, na ordem de exibição (a primeira é a capa)')
 
+const padraoCidadeUf = /^[^,]+\s*,\s*(?:AC|AL|AM|AP|BA|CE|DF|ES|GO|MA|MG|MS|MT|PA|PB|PE|PI|PR|RJ|RN|RO|RR|RS|SC|SE|SP|TO)$/
+
 const camposAnuncio = {
   condicao: z.string().trim().min(1).max(40),
   preco: z.number().positive().max(10_000_000),
-  localizacao: z.string().trim().min(2).max(120),
+  localizacao: z.string().trim().min(2).max(120).regex(padraoCidadeUf, 'Selecione um estado (UF) e uma cidade válidos'),
   descricao: z.string().trim().max(5000).optional(),
   aceitaPropostas: z.boolean().optional().describe('RF07: se o anúncio aceita propostas de preço (padrão: true)'),
 }

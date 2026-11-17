@@ -4,6 +4,7 @@ import { useState, type FormEvent } from 'react'
 import { Button } from '@/components/ui/button'
 import { CategoryFields } from '@/components/sell/category-fields'
 import { GlobalSpecFields } from '@/components/sell/global-spec-fields'
+import { LocationFields } from '@/components/sell/location-fields'
 import { PhotoUploader, type AtualizadorFotos } from '@/components/sell/photo-uploader'
 import { mensagemDeErro } from '@/lib/api'
 import { categorias, type Categoria } from '@/lib/categories'
@@ -144,10 +145,7 @@ export function Sell({ catalogoMestre, localizacaoPadrao, onPublish }: { catalog
                   </div>
                 </label>
               </div>
-              <label className="mt-5 block text-sm font-semibold">
-                Localização do item
-                <input name="localizacao" defaultValue={localizacaoPadrao} required minLength={2} placeholder="Ex.: São Paulo, SP" className="mt-2 w-full rounded-lg border bg-white px-3 py-3 font-normal" />
-              </label>
+              <LocationFields valorInicial={localizacaoPadrao} />
               <label className="mt-5 block text-sm font-semibold">
                 Descrição
                 <textarea name="descricao" rows={4} maxLength={5000} placeholder="Estado de conservação, regulagem, acessórios que acompanham..." className="mt-2 w-full resize-none rounded-lg border bg-white px-3 py-3 font-normal" />

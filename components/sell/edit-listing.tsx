@@ -5,6 +5,7 @@ import { ArrowLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { CategoryFields } from '@/components/sell/category-fields'
 import { GlobalSpecFields } from '@/components/sell/global-spec-fields'
+import { LocationFields } from '@/components/sell/location-fields'
 import { PhotoUploader, type AtualizadorFotos } from '@/components/sell/photo-uploader'
 import { mensagemDeErro } from '@/lib/api'
 import { categorias, type Categoria } from '@/lib/categories'
@@ -124,7 +125,7 @@ export function EditListing({ anuncio, onSave, onCancel }: { anuncio: Anuncio, o
                 </div>
               </label>
             </div>
-            <label className="mt-5 block text-sm font-semibold">Localização do item<input name="localizacao" defaultValue={anuncio.localizacao} required minLength={2} className={inputClass} /></label>
+            <LocationFields valorInicial={anuncio.localizacao} />
             <label className="mt-5 flex items-center justify-between border-t pt-5 text-sm font-semibold">
               Aceitar propostas de preço
               <input type="checkbox" name="aceitaPropostas" defaultChecked={anuncio.aceitaPropostas} />
