@@ -13,14 +13,34 @@ import type { Conversa, Mensagem, Oferta, Pedido } from '@/lib/models'
 // RF09 (chat) e RF07 (propostas). A tela consulta a API a cada 5 segundos para mostrar novidades.
 const INTERVALO_ATUALIZACAO = 5000
 
-const chaveDe = (c: AlvoConversa) => `${c.com.idUsuario}:${c.anuncio?.idAnuncio ?? ''}`
+export const chaveDe = (c: AlvoConversa) => `${c.com.idUsuario}:${c.anuncio?.idAnuncio ?? ''}`
+
+export function conversaNaoLida(conversa: Conversa | undefined, idUsuario: number, lidas: Record<string, number>) {
+  const ultima = conversa?.ultimaMensagem
+  if (!ultima || ultima.idDestinatario !== idUsuario) return false
+  return ultima.idMensagem > (lidas[chaveDe(conversa)] ?? 0)
+}
 
 type Janela =
   | { tipo: 'contraproposta', oferta: Oferta }
   | { tipo: 'nova-proposta', oferta: Oferta }
   | { tipo: 'compra', oferta: Oferta, item: ItemCheckout }
 
-export function Chat({ idUsuario, alvoInicial, onComprado }: { idUsuario: number, alvoInicial: AlvoConversa | null, onComprado: (pedido: Pedido) => void }) {
+export function Chat({
+  idUsuario,
+  alvoInicial,
+  onComprado,
+  lidas = {},
+  onMarcarLida,
+  onConversasChange,
+}: {
+  idUsuario: number
+  alvoInicial: AlvoConversa | null
+  onComprado: (pedido: Pedido) => void
+  lidas?: Record<string, number>
+  onMarcarLida?: (chave: string, idMensagem: number) => void
+  onConversasChange?: (conversas: Conversa[]) => void
+}) {
   const [conversas, setConversas] = useState<Conversa[]>([])
   const [selecionada, setSelecionada] = useState<AlvoConversa | null>(alvoInicial)
   const [mensagens, setMensagens] = useState<Mensagem[]>([])
@@ -34,9 +54,10 @@ export function Chat({ idUsuario, alvoInicial, onComprado }: { idUsuario: number
   const carregarConversas = useCallback(async () => {
     const lista = await api<Conversa[]>('/mensagens/conversas')
     setConversas(lista)
+    onConversasChange?.(lista)
     // Sem conversa aberta: abre a mais recente.
     setSelecionada((atual) => atual ?? (lista[0] ? { com: lista[0].com, anuncio: lista[0].anuncio } : null))
-  }, [])
+  }, [onConversasChange])
 
   // Chave da conversa aberta, para descartar respostas atrasadas de uma conversa anterior.
   const chaveAberta = useRef(alvoInicial ? chaveDe(alvoInicial) : '')
@@ -50,7 +71,9 @@ export function Chat({ idUsuario, alvoInicial, onComprado }: { idUsuario: number
     if (chaveAberta.current !== chaveDe(alvo)) return
     setMensagens(msgs)
     setOfertas(ofs)
-  }, [])
+    const ultimaRecebida = [...msgs].reverse().find((m) => m.idDestinatario === idUsuario)
+    if (ultimaRecebida) onMarcarLida?.(chaveDe(alvo), ultimaRecebida.idMensagem)
+  }, [idUsuario, onMarcarLida])
 
   const atualizar = useCallback(async () => {
     try {
@@ -93,14 +116,20 @@ export function Chat({ idUsuario, alvoInicial, onComprado }: { idUsuario: number
 
   useEffect(() => {
     chaveAberta.current = selecionada ? chaveDe(selecionada) : ''
-  }, [selecionada])
+    if (!selecionada) return
+    const ultima = conversas.find((c) => chaveDe(c) === chaveDe(selecionada))?.ultimaMensagem
+    if (ultima && ultima.idDestinatario === idUsuario) onMarcarLida?.(chaveDe(selecionada), ultima.idMensagem)
+  }, [conversas, selecionada, idUsuario, onMarcarLida])
 
   const abrir = (alvo: AlvoConversa) => {
-    chaveAberta.current = chaveDe(alvo)
+    const chave = chaveDe(alvo)
+    chaveAberta.current = chave
     setSelecionada(alvo)
     setMensagens([])
     setOfertas([])
     setErro('')
+    const ultima = ultimaMensagem(alvo)
+    if (ultima && ultima.idDestinatario === idUsuario) onMarcarLida?.(chave, ultima.idMensagem)
   }
 
   const executar = async (acao: () => Promise<unknown>) => {
@@ -176,14 +205,19 @@ export function Chat({ idUsuario, alvoInicial, onComprado }: { idUsuario: number
           <div className="max-h-64 overflow-y-auto md:max-h-[540px]">
             {lista.map((alvo) => {
               const ativa = selecionada && chaveDe(alvo) === chaveDe(selecionada)
-              const ultima = ultimaMensagem(alvo)
+              const conversa = conversas.find((c) => chaveDe(c) === chaveDe(alvo))
+              const ultima = conversa?.ultimaMensagem
+              const naoLida = !ativa && conversaNaoLida(conversa, idUsuario, lidas)
               return (
                 <button key={chaveDe(alvo)} onClick={() => abrir(alvo)} className={`flex w-full gap-3 border-b p-4 text-left ${ativa ? 'bg-white' : 'hover:bg-white/60'}`}>
-                  <div className="grid size-10 shrink-0 place-items-center rounded-full bg-red-100 font-bold text-red-600">{iniciais(alvo.com.nome)}</div>
+                  <div className="relative grid size-10 shrink-0 place-items-center rounded-full bg-red-100 font-bold text-red-600">
+                    {iniciais(alvo.com.nome)}
+                    {naoLida && <span aria-label="Mensagem não lida" className="absolute right-0 top-0 size-2.5 rounded-full bg-red-600 ring-2 ring-white" />}
+                  </div>
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-semibold">{alvo.com.nome}</p>
                     {alvo.anuncio && <p className="truncate text-xs font-semibold text-red-600">{alvo.anuncio.titulo}</p>}
-                    <p className="truncate text-xs text-gray-500">{ultima?.conteudo ?? 'Nova conversa'}</p>
+                    <p className={`truncate text-xs ${naoLida ? 'font-semibold text-gray-900' : 'text-gray-500'}`}>{ultima?.conteudo ?? 'Nova conversa'}</p>
                   </div>
                   {ultima && <span className="ml-auto shrink-0 text-[10px] text-gray-400">{formatarHora(ultima.dataEnvio)}</span>}
                 </button>

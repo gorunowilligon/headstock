@@ -7,7 +7,7 @@ import { Home } from '@/components/home/home'
 import { Detail } from '@/components/detail/detail'
 import { Sell } from '@/components/sell/sell'
 import { EditListing } from '@/components/sell/edit-listing'
-import { Chat } from '@/components/chat/chat'
+import { Chat, conversaNaoLida } from '@/components/chat/chat'
 import { Profile } from '@/components/profile/profile'
 import { Favorites } from '@/components/favorites/favorites'
 import { AuthForm } from '@/components/auth/auth-form'
@@ -16,10 +16,22 @@ import { api, mensagemDeErro } from '@/lib/api'
 import { Filtros, filtrosVazios, type DadosFiltros } from '@/lib/filtros'
 import type { AlvoConversa } from '@/components/detail/detail'
 import { Anuncio } from '@/lib/models'
-import type { EdicaoAnuncio, Instrumento, NovaDenuncia, NovoAnuncio, UsuarioSessao } from '@/lib/models'
+import type { Conversa, EdicaoAnuncio, Instrumento, NovaDenuncia, NovoAnuncio, UsuarioSessao } from '@/lib/models'
 
 // RF06: estas telas exigem login (ou cadastro).
 const telasComLogin = ['sell', 'edit', 'chat', 'profile', 'favorites']
+const INTERVALO_CONVERSAS = 10000
+
+const chaveLidas = (idUsuario: number) => `headstock:lidas:${idUsuario}`
+
+function lerMensagensLidas(idUsuario: number): Record<string, number> {
+  try {
+    const salvo = localStorage.getItem(chaveLidas(idUsuario))
+    return salvo ? JSON.parse(salvo) : {}
+  } catch {
+    return {}
+  }
+}
 
 type Aviso = { tipo: 'erro' | 'sucesso', texto: string }
 
@@ -47,9 +59,12 @@ export default function Page() {
   const [catalogoMestre, setCatalogoMestre] = useState<Instrumento[]>([])
   const [meusAnuncios, setMeusAnuncios] = useState<Anuncio[]>([])
   const [favoritosAnuncios, setFavoritosAnuncios] = useState<Anuncio[]>([])
+  const [conversas, setConversas] = useState<Conversa[]>([])
+  const [mensagensLidas, setMensagensLidas] = useState<Record<string, number>>({})
 
   const favoritos = favoritosAnuncios.map((anuncio) => anuncio.idAnuncio)
   const anuncioSelecionado = [...catalogo, ...meusAnuncios, ...favoritosAnuncios].find((anuncio) => anuncio.idAnuncio === anuncioSelecionadoId)
+  const temNotificacaoChat = Boolean(usuario && conversas.some((c) => conversaNaoLida(c, usuario.idUsuario, mensagensLidas)))
 
   const avisar = (tipo: Aviso['tipo'], texto: string) => setAviso({ tipo, texto })
   /** `contexto` diz o que falhou, ex.: "Não foi possível excluir o anúncio." */
@@ -120,13 +135,31 @@ export default function Page() {
   }, [])
 
   const idUsuario = usuario?.idUsuario
+
+  const marcarMensagemLida = useCallback((chave: string, idMensagem: number) => {
+    if (!idUsuario) return
+    setMensagensLidas((atuais) => {
+      if ((atuais[chave] ?? 0) >= idMensagem) return atuais
+      const atualizado = { ...atuais, [chave]: idMensagem }
+      try { localStorage.setItem(chaveLidas(idUsuario), JSON.stringify(atualizado)) } catch {}
+      return atualizado
+    })
+  }, [idUsuario])
+
   useEffect(() => {
     if (!idUsuario) {
       setMeusAnuncios([])
       setFavoritosAnuncios([])
+      setConversas([])
+      setMensagensLidas({})
       return
     }
+    setMensagensLidas(lerMensagensLidas(idUsuario))
     carregarMeusDados().catch((erro) => avisarErro(erro, 'Não foi possível carregar seus anúncios e favoritos.'))
+    const carregarNotificacoes = () => api<Conversa[]>('/mensagens/conversas').then(setConversas).catch(() => {})
+    carregarNotificacoes()
+    const timer = setInterval(carregarNotificacoes, INTERVALO_CONVERSAS)
+    return () => clearInterval(timer)
   }, [idUsuario, carregarMeusDados])
 
   const recarregarTudo = () => Promise.all([carregarCatalogo(), carregarMeusDados()])
@@ -269,7 +302,7 @@ export default function Page() {
     }
     if (currentView === 'sell') return <Sell catalogoMestre={catalogoMestre} localizacaoPadrao={usuario.enderecoCompleto} onPublish={publishListing} />
     if (currentView === 'edit' && anuncioSelecionado) return <EditListing key={anuncioSelecionado.idAnuncio} anuncio={anuncioSelecionado} onSave={updateListing} onCancel={() => irParaPerfil('anuncios')} />
-    if (currentView === 'chat') return <Chat key={alvoChat ? `${alvoChat.com.idUsuario}:${alvoChat.anuncio?.idAnuncio}` : 'chat'} idUsuario={usuario.idUsuario} alvoInicial={alvoChat} onComprado={aposComprar} />
+    if (currentView === 'chat') return <Chat key={alvoChat ? `${alvoChat.com.idUsuario}:${alvoChat.anuncio?.idAnuncio}` : 'chat'} idUsuario={usuario.idUsuario} alvoInicial={alvoChat} onComprado={aposComprar} lidas={mensagensLidas} onMarcarLida={marcarMensagemLida} onConversasChange={setConversas} />
     if (currentView === 'profile') return <Profile key={abaPerfil} abaInicial={abaPerfil} usuario={usuario} meusAnuncios={meusAnuncios.filter((anuncio) => anuncio.status !== 'removido')} onSalvarPerfil={salvarPerfil} onSair={sair} onEditListing={editListing} onTogglePause={togglePause} onDeleteListing={deleteListing} />
     if (currentView === 'favorites') return <Favorites catalogo={favoritosAnuncios} onOpen={openDetail} onBrowse={() => setCurrentView('home')} favoritos={favoritos} onToggleFavorite={toggleFavorite} />
     return renderHome()
@@ -283,7 +316,7 @@ export default function Page() {
     // Coluna flex: o conteúdo ocupa a altura que sobra e o rodapé fica sempre no fim da tela,
     // mesmo em páginas curtas (favoritos vazios, abas pequenas do perfil).
     <div className="flex min-h-screen flex-col bg-white text-gray-950">
-      <Header onNavigate={navegar} onSearch={pesquisarTexto} logado={Boolean(usuario)} />
+      <Header onNavigate={navegar} onSearch={pesquisarTexto} logado={Boolean(usuario)} temNotificacaoChat={temNotificacaoChat} />
       {aviso && (
         <div role={aviso.tipo === 'erro' ? 'alert' : 'status'} className={`px-5 py-3 text-center text-sm font-semibold ${aviso.tipo === 'erro' ? 'bg-red-50 text-red-700' : 'bg-green-50 text-green-700'}`}>
           {aviso.texto}

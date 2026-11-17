@@ -4,7 +4,7 @@ import { useState, type FormEvent } from 'react'
 import { Guitar, Heart, LogIn, Menu, MessageCircle, Plus, Search, UserRound, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
-export function Header({ onNavigate, onSearch, logado }: { onNavigate: (view: string) => void, onSearch: (texto: string) => void, logado: boolean }) {
+export function Header({ onNavigate, onSearch, logado, temNotificacaoChat = false }: { onNavigate: (view: string) => void, onSearch: (texto: string) => void, logado: boolean, temNotificacaoChat?: boolean }) {
   const [texto, setTexto] = useState('')
   const [menuAberto, setMenuAberto] = useState(false)
 
@@ -44,7 +44,10 @@ export function Header({ onNavigate, onSearch, logado }: { onNavigate: (view: st
         </form>
         <nav className="ml-auto flex items-center gap-1" aria-label="Navegação principal">
           <Button variant="ghost" size="icon" onClick={() => onNavigate('favorites')} aria-label="Favoritos"><Heart /></Button>
-          <Button variant="ghost" size="icon" onClick={() => onNavigate('chat')} aria-label="Mensagens"><MessageCircle /></Button>
+          <Button variant="ghost" size="icon" onClick={() => onNavigate('chat')} className="relative" aria-label={temNotificacaoChat ? 'Mensagens (há mensagens não lidas)' : 'Mensagens'}>
+            <MessageCircle />
+            {temNotificacaoChat && <span aria-hidden="true" className="absolute right-1.5 top-1.5 size-2 rounded-full bg-red-600 ring-2 ring-white" />}
+          </Button>
           <Button onClick={() => onNavigate('sell')} className="hidden gap-2 bg-red-600 hover:bg-red-700 sm:flex"><Plus /> Criar anúncio</Button>
           {logado
             ? <Button variant="ghost" size="icon" onClick={() => onNavigate('profile')} aria-label="Perfil"><UserRound /></Button>
