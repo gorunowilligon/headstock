@@ -7,6 +7,8 @@ import { serializarMensagem } from '../http/serializar.js'
 
 const rotas = criarRouter('/mensagens', 'Chat')
 
+const participante = { select: { idUsuario: true, nome: true } }
+
 rotas.post('/', {
   resumo: 'Enviar mensagem no chat (RF09)',
   auth: 'usuario',
@@ -44,41 +46,22 @@ rotas.get('/conversas', {
   auth: 'usuario',
   handler: async ({ usuario }) => {
     const eu = usuario.idUsuario
-    const linhas = await prisma.$queryRaw`
-      SELECT
-        m."idMensagem",
-        m."conteudo",
-        m."dataEnvio",
-        m."idRemetente",
-        m."idDestinatario",
-        m."idAnuncio",
-        u."idUsuario" AS "outroId",
-        u."nome" AS "outroNome",
-        a."titulo" AS "anuncioTitulo"
-      FROM (
-        SELECT DISTINCT ON (
-          CASE WHEN "idRemetente" = ${eu} THEN "idDestinatario" ELSE "idRemetente" END,
-          COALESCE("idAnuncio", 0)
-        )
-          "idMensagem", "conteudo", "dataEnvio", "idRemetente", "idDestinatario", "idAnuncio"
-        FROM "Mensagem"
-        WHERE "idRemetente" = ${eu} OR "idDestinatario" = ${eu}
-        ORDER BY
-          CASE WHEN "idRemetente" = ${eu} THEN "idDestinatario" ELSE "idRemetente" END,
-          COALESCE("idAnuncio", 0),
-          "dataEnvio" DESC,
-          "idMensagem" DESC
-      ) m
-      JOIN "Usuario" u ON u."idUsuario" = CASE WHEN m."idRemetente" = ${eu} THEN m."idDestinatario" ELSE m."idRemetente" END
-      LEFT JOIN "Anuncio" a ON a."idAnuncio" = m."idAnuncio"
-      ORDER BY m."dataEnvio" DESC, m."idMensagem" DESC
-    `
+    const mensagens = await prisma.mensagem.findMany({
+      where: { OR: [{ idRemetente: eu }, { idDestinatario: eu }] },
+      distinct: ['idRemetente', 'idDestinatario', 'idAnuncio'],
+      include: { remetente: participante, destinatario: participante, anuncio: { select: { idAnuncio: true, titulo: true } } },
+      orderBy: [{ dataEnvio: 'desc' }, { idMensagem: 'desc' }],
+    })
 
-    return linhas.map((l) => ({
-      com: { idUsuario: l.outroId, nome: l.outroNome },
-      anuncio: l.idAnuncio && l.anuncioTitulo ? { idAnuncio: l.idAnuncio, titulo: l.anuncioTitulo } : null,
-      ultimaMensagem: serializarMensagem(l),
-    }))
+    const conversas = new Map()
+    for (const m of mensagens) {
+      const outro = m.idRemetente === eu ? m.destinatario : m.remetente
+      const chave = `${outro.idUsuario}:${m.idAnuncio ?? ''}`
+      if (!conversas.has(chave)) {
+        conversas.set(chave, { com: outro, anuncio: m.anuncio, ultimaMensagem: serializarMensagem(m) })
+      }
+    }
+    return [...conversas.values()]
   },
 })
 
