@@ -29,6 +29,7 @@ type Janela =
 export function Chat({
   idUsuario,
   alvoInicial,
+  conversasIniciais = [],
   onComprado,
   lidas = {},
   onMarcarLida,
@@ -36,13 +37,15 @@ export function Chat({
 }: {
   idUsuario: number
   alvoInicial: AlvoConversa | null
+  conversasIniciais?: Conversa[]
   onComprado: (pedido: Pedido) => void
   lidas?: Record<string, number>
   onMarcarLida?: (chave: string, idMensagem: number) => void
   onConversasChange?: (conversas: Conversa[]) => void
 }) {
-  const [conversas, setConversas] = useState<Conversa[]>([])
-  const [selecionada, setSelecionada] = useState<AlvoConversa | null>(alvoInicial)
+  const primeiraConversa = alvoInicial ?? (conversasIniciais[0] ? { com: conversasIniciais[0].com, anuncio: conversasIniciais[0].anuncio } : null)
+  const [conversas, setConversas] = useState<Conversa[]>(conversasIniciais)
+  const [selecionada, setSelecionada] = useState<AlvoConversa | null>(primeiraConversa)
   const [mensagens, setMensagens] = useState<Mensagem[]>([])
   const [ofertas, setOfertas] = useState<Oferta[]>([])
   const [texto, setTexto] = useState('')
@@ -50,17 +53,10 @@ export function Chat({
   const [erro, setErro] = useState('')
   const [janela, setJanela] = useState<Janela | null>(null)
   const fimDaConversa = useRef<HTMLDivElement>(null)
-
-  const carregarConversas = useCallback(async () => {
-    const lista = await api<Conversa[]>('/mensagens/conversas')
-    setConversas(lista)
-    onConversasChange?.(lista)
-    // Sem conversa aberta: abre a mais recente.
-    setSelecionada((atual) => atual ?? (lista[0] ? { com: lista[0].com, anuncio: lista[0].anuncio } : null))
-  }, [onConversasChange])
+  const selecionadaRef = useRef<AlvoConversa | null>(primeiraConversa)
 
   // Chave da conversa aberta, para descartar respostas atrasadas de uma conversa anterior.
-  const chaveAberta = useRef(alvoInicial ? chaveDe(alvoInicial) : '')
+  const chaveAberta = useRef(primeiraConversa ? chaveDe(primeiraConversa) : '')
 
   const carregarConversa = useCallback(async (alvo: AlvoConversa) => {
     const anuncio = alvo.anuncio?.idAnuncio
@@ -75,15 +71,31 @@ export function Chat({
     if (ultimaRecebida) onMarcarLida?.(chaveDe(alvo), ultimaRecebida.idMensagem)
   }, [idUsuario, onMarcarLida])
 
+  const carregarConversas = useCallback(async () => {
+    const lista = await api<Conversa[]>('/mensagens/conversas')
+    setConversas(lista)
+    onConversasChange?.(lista)
+    if (!selecionadaRef.current && lista[0]) {
+      const inicial: AlvoConversa = { com: lista[0].com, anuncio: lista[0].anuncio }
+      selecionadaRef.current = inicial
+      chaveAberta.current = chaveDe(inicial)
+      setSelecionada(inicial)
+      await carregarConversa(inicial)
+    }
+  }, [onConversasChange, carregarConversa])
+
   const atualizar = useCallback(async () => {
     try {
-      await carregarConversas()
-      if (selecionada) await carregarConversa(selecionada)
+      const atual = selecionadaRef.current
+      await Promise.all([
+        carregarConversas(),
+        atual ? carregarConversa(atual) : Promise.resolve(),
+      ])
       setErro('')
     } catch (e) {
       setErro(mensagemDeErro(e))
     }
-  }, [carregarConversas, carregarConversa, selecionada])
+  }, [carregarConversas, carregarConversa])
 
   useEffect(() => {
     atualizar()
@@ -115,6 +127,7 @@ export function Chat({
   const ultimaMensagem = (alvo: AlvoConversa) => conversas.find((c) => chaveDe(c) === chaveDe(alvo))?.ultimaMensagem
 
   useEffect(() => {
+    selecionadaRef.current = selecionada
     chaveAberta.current = selecionada ? chaveDe(selecionada) : ''
     if (!selecionada) return
     const ultima = conversas.find((c) => chaveDe(c) === chaveDe(selecionada))?.ultimaMensagem
@@ -123,6 +136,8 @@ export function Chat({
 
   const abrir = (alvo: AlvoConversa) => {
     const chave = chaveDe(alvo)
+    if (chaveAberta.current === chave) return
+    selecionadaRef.current = alvo
     chaveAberta.current = chave
     setSelecionada(alvo)
     setMensagens([])
@@ -130,6 +145,7 @@ export function Chat({
     setErro('')
     const ultima = ultimaMensagem(alvo)
     if (ultima && ultima.idDestinatario === idUsuario) onMarcarLida?.(chave, ultima.idMensagem)
+    carregarConversa(alvo).catch((e) => setErro(mensagemDeErro(e)))
   }
 
   const executar = async (acao: () => Promise<unknown>) => {
@@ -142,21 +158,47 @@ export function Chat({
     }
   }
 
+  const atualizarResumoConversa = (alvo: AlvoConversa, ultimaMensagem: Mensagem) => {
+    setConversas((atuais) => {
+      const chave = chaveDe(alvo)
+      const restantes = atuais.filter((c) => chaveDe(c) !== chave)
+      const novaLista = [{ com: alvo.com, anuncio: alvo.anuncio, ultimaMensagem }, ...restantes]
+      onConversasChange?.(novaLista)
+      return novaLista
+    })
+  }
+
   const enviarMensagem = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     if (!selecionada || !texto.trim()) return
+    const alvo = selecionada
     const conteudo = texto.trim()
+    const idTemporario = -Date.now()
+    const mensagemOtimista: Mensagem = {
+      idMensagem: idTemporario,
+      conteudo,
+      dataEnvio: new Date().toISOString(),
+      idRemetente: idUsuario,
+      idDestinatario: alvo.com.idUsuario,
+      idAnuncio: alvo.anuncio?.idAnuncio ?? null,
+    }
     setTexto('')
     setErro('')
+    setMensagens((atuais) => [...atuais, mensagemOtimista])
+    atualizarResumoConversa(alvo, mensagemOtimista)
     try {
-      await api('/mensagens', { method: 'POST', body: { idDestinatario: selecionada.com.idUsuario, idAnuncio: selecionada.anuncio?.idAnuncio, conteudo } })
+      const enviada = await api<Mensagem>('/mensagens', {
+        method: 'POST',
+        body: { idDestinatario: alvo.com.idUsuario, idAnuncio: alvo.anuncio?.idAnuncio, conteudo },
+      })
+      setMensagens((atuais) => atuais.map((m) => (m.idMensagem === idTemporario ? enviada : m)))
+      atualizarResumoConversa(alvo, enviada)
     } catch (erro) {
-      // Devolve o texto ao campo para o usuário não perder o que escreveu.
+      // Remove a mensagem otimista e devolve o texto ao campo para o usuário não perder o que escreveu.
+      setMensagens((atuais) => atuais.filter((m) => m.idMensagem !== idTemporario))
       setTexto((atual) => atual || conteudo)
       setErro(`Mensagem não enviada. ${mensagemDeErro(erro)}`)
-      return
     }
-    await atualizar()
   }
 
   const responder = (oferta: Oferta, acao: 'aceitar' | 'recusar') => executar(() => api(`/ofertas/${oferta.idOferta}/${acao}`, { method: 'POST' }))
@@ -187,7 +229,7 @@ export function Chat({
     && ['recusada', 'expirada', 'cancelada'].includes(ultimaOferta.status)
 
   return (
-    <main className="mx-auto max-w-6xl px-5 py-8 lg:px-10">
+    <main className="mx-auto w-full max-w-[96rem] px-5 py-8 lg:px-10">
       <div className="mb-7">
         <p className="text-sm font-semibold text-red-600">Conecte-se com músicos</p>
         <h1 className="mt-1 text-3xl font-extrabold">Negociações</h1>

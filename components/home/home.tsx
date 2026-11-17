@@ -31,7 +31,7 @@ export function Home({ catalogo, carregando, erro, aviso, onTentarNovamente, bus
   const abrirSecao = (categoria: string) => onFiltrosChange({ ...filtros, categorias: [categoria], marcas: [], tiposCaptacao: [] })
 
   return (
-    <main className="mx-auto max-w-[1440px] px-5 py-8 lg:px-10">
+    <main className="mx-auto w-full px-5 py-8 lg:px-10">
       <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="mb-2 text-sm font-semibold text-red-600">Mercado de instrumentos</p>
@@ -45,20 +45,19 @@ export function Home({ catalogo, carregando, erro, aviso, onTentarNovamente, bus
       <div className="flex flex-col gap-10 lg:flex-row">
         <Filters filtros={filtros} onChange={onFiltrosChange} instrumentos={instrumentos} aberto={filtrosAbertos} />
         <section className="min-w-0 flex-1">
-          <div role="tablist" aria-label="Seções de instrumentos" className="-mx-1 mb-5 flex gap-1 overflow-x-auto border-b px-1">
-            {categoriasDoFiltro.map((categoria) => (
-              <button
-                key={categoria}
-                role="tab"
-                aria-selected={secao === categoria}
-                onClick={() => abrirSecao(categoria)}
-                className={`-mb-px shrink-0 border-b-2 px-4 py-3 text-sm font-semibold transition-colors ${secao === categoria ? 'border-red-600 text-red-600' : 'border-transparent text-gray-500 hover:text-gray-900'}`}
-              >{categoria}</button>
-            ))}
-          </div>
-          <div className="mb-5 flex items-center justify-between border-b pb-4 text-sm">
-            <span className="font-medium">{secao || (busca || ativos > 0 ? 'Resultados' : 'Anúncios recentes')}</span>
-            <select value={filtros.ordenar} onChange={(e) => onFiltrosChange({ ...filtros, ordenar: e.target.value as Ordenacao })} className="rounded-lg border bg-white px-3 py-2 text-sm" aria-label="Ordenar anúncios">
+          <div className="mb-6 flex flex-wrap items-center justify-between gap-3 border-b">
+            <div role="tablist" aria-label="Seções de instrumentos" className="flex flex-wrap gap-1">
+              {categoriasDoFiltro.map((categoria) => (
+                <button
+                  key={categoria}
+                  role="tab"
+                  aria-selected={secao === categoria}
+                  onClick={() => abrirSecao(categoria)}
+                  className={`-mb-px border-b-2 px-4 py-3 text-sm font-semibold transition-colors ${secao === categoria ? 'border-red-600 text-red-600' : 'border-transparent text-gray-500 hover:text-gray-900'}`}
+                >{categoria}</button>
+              ))}
+            </div>
+            <select value={filtros.ordenar} onChange={(e) => onFiltrosChange({ ...filtros, ordenar: e.target.value as Ordenacao })} className="mb-1.5 rounded-lg border bg-white px-3 py-2 text-sm" aria-label="Ordenar anúncios">
               {opcoesOrdenacao.map((opcao) => <option key={opcao.valor} value={opcao.valor}>{opcao.rotulo}</option>)}
             </select>
           </div>
@@ -76,7 +75,7 @@ export function Home({ catalogo, carregando, erro, aviso, onTentarNovamente, bus
                 : busca ? <p className="mt-1">Confira a ortografia ou tente termos mais gerais, como a marca ou o tipo de instrumento.</p> : <p className="mt-1">Ainda não há instrumentos anunciados. Volte mais tarde!</p>}
             </div>
           )}
-          <div className="grid grid-cols-1 gap-x-5 gap-y-9 sm:grid-cols-2 xl:grid-cols-3">
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,260px),1fr))] gap-x-5 gap-y-9">
             {catalogo.map((product) => (
               <ProductCard
                 key={product.idAnuncio}

@@ -80,7 +80,7 @@ export function EditListing({ anuncio, onSave, onCancel }: { anuncio: Anuncio, o
 
   return (
     <main className="bg-gray-50">
-      <div className="mx-auto max-w-5xl px-5 py-8 lg:px-10">
+      <div className="mx-auto w-full max-w-7xl px-5 py-8 lg:px-10">
         <button onClick={onCancel} className="mb-7 flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-red-600"><ArrowLeft /> Voltar para meus anúncios</button>
         <div className="mb-8">
           <p className="text-sm font-semibold text-red-600">Meus anúncios</p>

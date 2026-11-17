@@ -5,10 +5,24 @@ import { pedidoInclude } from '../http/serializar.js'
 
 /**
  * RN02: libera o pagamento (pedido "concluido") 48h após a entrega, se não houver disputa.
- * Executado de forma preguiçosa antes de cada leitura de pedidos, dispensando um job agendado.
+ * Só vai ao banco atualizar quando realmente existe algum pedido entregue com prazo vencido.
  */
-export async function liberarPagamentosVencidos() {
+export async function liberarPagamentosVencidos(pedidos) {
   const limite = new Date(Date.now() - HORAS_LIBERACAO_PAGAMENTO * 3_600_000)
+  if (Array.isArray(pedidos)) {
+    const vencidos = pedidos.filter((p) => p.statusPedido === 'entregue' && p.dataEntrega && p.dataEntrega <= limite)
+    if (!vencidos.length) return
+    const agora = new Date()
+    await prisma.pedido.updateMany({
+      where: { idPedido: { in: vencidos.map((p) => p.idPedido) }, statusPedido: 'entregue' },
+      data: { statusPedido: 'concluido', dataConclusao: agora },
+    })
+    for (const p of vencidos) {
+      p.statusPedido = 'concluido'
+      p.dataConclusao = agora
+    }
+    return
+  }
   await prisma.pedido.updateMany({
     where: { statusPedido: 'entregue', dataEntrega: { lte: limite } },
     data: { statusPedido: 'concluido', dataConclusao: new Date() },
@@ -20,9 +34,9 @@ export async function liberarPagamentosVencidos() {
  * papel: "comprador" | "vendedor" | "participante" (comprador, vendedor ou admin).
  */
 export async function buscarPedido(idPedido, usuario, papel = 'participante') {
-  await liberarPagamentosVencidos()
   const pedido = await prisma.pedido.findUnique({ where: { idPedido }, include: pedidoInclude })
   if (!pedido) throw naoEncontrado('Pedido')
+  await liberarPagamentosVencidos([pedido])
 
   const ehComprador = pedido.idComprador === usuario.idUsuario
   const ehVendedor = pedido.anuncio.idVendedor === usuario.idUsuario

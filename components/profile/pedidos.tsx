@@ -26,28 +26,59 @@ const corDoStatus: Record<string, string> = {
 }
 
 /** Compras ou vendas do usuário, com as ações de cada etapa do pedido (RF08, RF10, RN02–RN04, RN09). */
-export function Pedidos({ papel }: { papel: Papel }) {
-  const [pedidos, setPedidos] = useState<Pedido[] | null>(null)
+export function Pedidos({
+  papel,
+  pedidosIniciais = null,
+  onPedidosChange,
+}: {
+  papel: Papel
+  pedidosIniciais?: Pedido[] | null
+  onPedidosChange?: (pedidos: Pedido[]) => void
+}) {
+  const [pedidos, setPedidos] = useState<Pedido[] | null>(pedidosIniciais)
   const [erro, setErro] = useState('')
   const [janela, setJanela] = useState<Janela | null>(null)
 
+  useEffect(() => {
+    if (pedidosIniciais !== null) setPedidos(pedidosIniciais)
+  }, [pedidosIniciais])
+
+  const atualizarLista = useCallback((atualizador: Pedido[] | ((atuais: Pedido[]) => Pedido[])) => {
+    setPedidos((atuais) => {
+      const nova = typeof atualizador === 'function' ? atualizador(atuais ?? []) : atualizador
+      onPedidosChange?.(nova)
+      return nova
+    })
+  }, [onPedidosChange])
+
   const carregar = useCallback(async () => {
     try {
-      setPedidos(await api<Pedido[]>('/pedidos', { query: { papel } }))
+      const lista = await api<Pedido[]>('/pedidos', { query: { papel } })
+      atualizarLista(lista)
       setErro('')
     } catch (e) {
       setErro(mensagemDeErro(e))
     }
-  }, [papel])
+  }, [papel, atualizarLista])
 
-  useEffect(() => { carregar() }, [carregar])
+  useEffect(() => {
+    if (pedidosIniciais === null) carregar()
+  }, [pedidosIniciais, carregar])
 
-  const executar = async (acao: () => Promise<unknown>) => {
+  const executar = async (acao: () => Promise<Pedido | Avaliacao>) => {
     setErro('')
     try {
-      await acao()
+      const resultado = await acao()
       setJanela(null)
-      await carregar()
+      if ('statusPedido' in resultado) {
+        atualizarLista((atuais) => atuais.map((p) => (p.idPedido === resultado.idPedido ? resultado : p)))
+      } else if ('notaEstrelas' in resultado) {
+        atualizarLista((atuais) => atuais.map((p) => (
+          p.idPedido === resultado.idPedido
+            ? { ...p, avaliacoes: [...(p.avaliacoes ?? []), resultado] }
+            : p
+        )))
+      }
     } catch (e) {
       setErro(mensagemDeErro(e))
       throw e
@@ -114,14 +145,14 @@ export function Pedidos({ papel }: { papel: Papel }) {
           minimo={10}
           rotuloBotao="Abrir disputa"
           onClose={() => setJanela(null)}
-          onEnviar={(motivo) => executar(() => api(`/pedidos/${janela.pedido.idPedido}/disputa`, { method: 'POST', body: { motivo } }))}
+          onEnviar={(motivo) => executar(() => api<Pedido>(`/pedidos/${janela.pedido.idPedido}/disputa`, { method: 'POST', body: { motivo } }))}
         />
       )}
       {janela?.tipo === 'avaliacao' && (
         <FormularioAvaliacao
           alvo={janela.alvo}
           onClose={() => setJanela(null)}
-          onEnviar={(notaEstrelas, textoJustificativo) => executar(() => api(`/pedidos/${janela.pedido.idPedido}/avaliacoes`, {
+          onEnviar={(notaEstrelas, textoJustificativo) => executar(() => api<Avaliacao>(`/pedidos/${janela.pedido.idPedido}/avaliacoes`, {
             method: 'POST',
             body: { tipoAvaliacao: janela.alvo, notaEstrelas, textoJustificativo },
           }))}
@@ -146,7 +177,7 @@ export function Pedidos({ papel }: { papel: Papel }) {
 function AcoesDoPedido({ pedido, papel, executar, abrir, verRecibo }: {
   pedido: Pedido
   papel: Papel
-  executar: (acao: () => Promise<unknown>) => Promise<void>
+  executar: (acao: () => Promise<Pedido | Avaliacao>) => Promise<void>
   abrir: (janela: Janela) => void
   verRecibo: (pedido: Pedido) => void
 }) {
@@ -160,7 +191,7 @@ function AcoesDoPedido({ pedido, papel, executar, abrir, verRecibo }: {
     const problema = validarFormulario(e.currentTarget)
     setErroRastreio(problema ?? '')
     if (problema) return
-    executar(() => api(`/pedidos/${pedido.idPedido}/rastreio`, { method: 'POST', body: { codigoRastreio: codigo.trim() } })).catch(() => {})
+    executar(() => api<Pedido>(`/pedidos/${pedido.idPedido}/rastreio`, { method: 'POST', body: { codigoRastreio: codigo.trim() } })).catch(() => {})
   }
 
   if (papel === 'vendedor') {
@@ -195,7 +226,7 @@ function AcoesDoPedido({ pedido, papel, executar, abrir, verRecibo }: {
     botoes.push(<p key="aguardando" className="text-xs text-gray-500">O vendedor tem até {pedido.prazoRastreio ? formatarData(pedido.prazoRastreio) : '3 dias úteis'} para enviar o código de rastreio.</p>)
   }
   if (pedido.statusPedido === 'enviado') {
-    botoes.push(<Button key="entrega" size="sm" onClick={() => executar(() => api(`/pedidos/${pedido.idPedido}/confirmar-entrega`, { method: 'POST' })).catch(() => {})} className="bg-red-600 hover:bg-red-700">Confirmar recebimento</Button>)
+    botoes.push(<Button key="entrega" size="sm" onClick={() => executar(() => api<Pedido>(`/pedidos/${pedido.idPedido}/confirmar-entrega`, { method: 'POST' })).catch(() => {})} className="bg-red-600 hover:bg-red-700">Confirmar recebimento</Button>)
   }
   if (pedido.statusPedido === 'entregue' && dentroDoPrazoDeDisputa) {
     botoes.push(<Button key="disputa" size="sm" variant="outline" onClick={() => abrir({ tipo: 'disputa', pedido })} className="gap-1"><AlertTriangle className="size-4" /> Abrir disputa (até {formatarDataHora(pedido.prazoDisputaAte!)})</Button>)

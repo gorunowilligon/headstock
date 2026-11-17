@@ -84,7 +84,7 @@ export function Sell({ catalogoMestre, localizacaoPadrao, onPublish }: { catalog
 
   return (
     <main className="bg-gray-50">
-      <div className="mx-auto max-w-5xl px-5 py-8 lg:px-10">
+      <div className="mx-auto w-full max-w-7xl px-5 py-8 lg:px-10">
         <div className="mb-8">
           <p className="text-sm font-semibold text-red-600">Venda para a comunidade</p>
           <h1 className="mt-1 text-3xl font-extrabold">Criar anúncio</h1>

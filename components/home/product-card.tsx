@@ -7,7 +7,7 @@ export function ProductCard({ product, onOpen, isFavorite, onToggleFavorite }: {
   return (
     <article className="group cursor-pointer" onClick={onOpen}>
       <div className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-gray-100">
-        <img src={capaDoAnuncio(product)} alt={product.titulo} className="size-full object-cover transition duration-500 group-hover:scale-105" />
+        <img src={capaDoAnuncio(product)} alt={product.titulo} loading="lazy" decoding="async" className="size-full object-cover transition duration-500 group-hover:scale-105" />
         <button
           onClick={(e) => { e.stopPropagation(); onToggleFavorite() }}
           className="absolute right-3 top-3 grid size-9 place-items-center rounded-full bg-white/90 text-gray-700 shadow-sm"

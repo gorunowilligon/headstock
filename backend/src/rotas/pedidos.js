@@ -108,11 +108,11 @@ rotas.get('/', {
   auth: 'usuario',
   query: z.object({ papel: z.enum(['comprador', 'vendedor']).default('comprador') }),
   handler: async ({ usuario, query }) => {
-    await liberarPagamentosVencidos()
     const where = query.papel === 'comprador'
       ? { idComprador: usuario.idUsuario }
       : { anuncio: { idVendedor: usuario.idUsuario } }
     const pedidos = await prisma.pedido.findMany({ where, include: pedidoInclude, orderBy: { dataCriacao: 'desc' } })
+    await liberarPagamentosVencidos(pedidos)
     return pedidos.map(serializarPedido)
   },
 })
@@ -197,7 +197,7 @@ rotas.get('/:id/recibo', {
     exigirStatus(pedido, 'concluido')
     const p = serializarPedido(pedido)
     return {
-      numero: `HS-${pedido.idPedido.slice(0, 8).toUpperCase()}`,
+      numero: `HS-${String(pedido.idPedido).padStart(6, '0')}`,
       emitidoEm: pedido.dataConclusao,
       vendedor: { idUsuario: usuario.idUsuario, nome: usuario.nome, email: usuario.email },
       anuncio: { idAnuncio: pedido.anuncio.idAnuncio, titulo: pedido.anuncio.titulo },

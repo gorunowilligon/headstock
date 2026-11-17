@@ -105,16 +105,16 @@ rotas.get('/', {
       maior_preco: { preco: 'desc' },
     }[query.ordenar]
 
-    const [total, itens] = await prisma.$transaction([
-      prisma.anuncio.count({ where }),
-      prisma.anuncio.findMany({
-        where,
-        include: anuncioInclude,
-        orderBy,
-        skip: (query.pagina - 1) * query.porPagina,
-        take: query.porPagina,
-      }),
-    ])
+    const itens = await prisma.anuncio.findMany({
+      where,
+      include: anuncioInclude,
+      orderBy,
+      skip: (query.pagina - 1) * query.porPagina,
+      take: query.porPagina,
+    })
+    const total = query.pagina === 1 && itens.length < query.porPagina
+      ? itens.length
+      : await prisma.anuncio.count({ where })
     return { itens: itens.map(serializarAnuncio), total, pagina: query.pagina, porPagina: query.porPagina }
   },
 })

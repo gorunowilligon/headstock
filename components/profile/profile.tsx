@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { ListingRow } from '@/components/profile/listing-row'
 import { Pedidos } from '@/components/profile/pedidos'
 import { mensagemDeErro } from '@/lib/api'
-import type { Anuncio, UsuarioSessao } from '@/lib/models'
+import type { Anuncio, Pedido, UsuarioSessao } from '@/lib/models'
 import { validarFormulario } from '@/lib/validacao'
 
 type CamposPerfil = { nome?: string, enderecoCompleto?: string, chavePix?: string }
@@ -20,9 +20,26 @@ const titulosDasAbas: Record<string, string> = {
   financeiro: 'Financeiro e pagamentos',
 }
 
-export function Profile({ usuario, meusAnuncios, abaInicial = 'dados', onSalvarPerfil, onSair, onEditListing, onTogglePause, onDeleteListing }: {
+export function Profile({
+  usuario,
+  meusAnuncios,
+  pedidosComprador = null,
+  pedidosVendedor = null,
+  onPedidosCompradorChange,
+  onPedidosVendedorChange,
+  abaInicial = 'dados',
+  onSalvarPerfil,
+  onSair,
+  onEditListing,
+  onTogglePause,
+  onDeleteListing,
+}: {
   usuario: UsuarioSessao
   meusAnuncios: Anuncio[]
+  pedidosComprador?: Pedido[] | null
+  pedidosVendedor?: Pedido[] | null
+  onPedidosCompradorChange?: (pedidos: Pedido[]) => void
+  onPedidosVendedorChange?: (pedidos: Pedido[]) => void
   abaInicial?: string
   onSalvarPerfil: (campos: CamposPerfil) => Promise<void>
   onSair: () => void
@@ -92,7 +109,13 @@ export function Profile({ usuario, meusAnuncios, abaInicial = 'dados', onSalvarP
     const data = new FormData(e.currentTarget)
     const alterados: CamposPerfil = {}
     for (const campo of campos) {
-      if (!campo.somenteLeitura) alterados[campo.nome as keyof CamposPerfil] = String(data.get(campo.nome) ?? '').trim()
+      if (campo.somenteLeitura) continue
+      const novoValor = String(data.get(campo.nome) ?? '').trim()
+      if (novoValor !== campo.valor) alterados[campo.nome as keyof CamposPerfil] = novoValor
+    }
+    if (Object.keys(alterados).length === 0) {
+      setMensagem({ tipo: 'sucesso', texto: 'Dados salvos.' })
+      return
     }
     setSalvando(true)
     setMensagem(null)
@@ -109,7 +132,7 @@ export function Profile({ usuario, meusAnuncios, abaInicial = 'dados', onSalvarP
   const estrelas = Math.round(usuario.reputacaoMedia)
 
   return (
-    <main className="mx-auto max-w-6xl px-5 py-8 lg:px-10">
+    <main className="mx-auto w-full max-w-[96rem] px-5 py-8 lg:px-10">
       <div className="mb-8 flex items-end justify-between gap-4">
         <div>
           <p className="text-sm font-semibold text-red-600">Sua conta</p>
@@ -124,10 +147,15 @@ export function Profile({ usuario, meusAnuncios, abaInicial = 'dados', onSalvarP
             <button key={key} onClick={() => mudarAba(key)} className={`whitespace-nowrap rounded-lg px-4 py-3 text-left text-sm font-semibold ${tab === key ? 'bg-red-50 text-red-600' : 'text-gray-500 hover:bg-gray-50'}`}>{label}</button>
           ))}
         </nav>
-        <section className="min-w-0 max-w-2xl rounded-2xl border bg-white p-4 sm:p-6">
+        <section className="min-w-0 w-full max-w-4xl rounded-2xl border bg-white p-4 sm:p-6">
           <h2 className="text-xl font-bold">{titulosDasAbas[tab] ?? 'Financeiro e pagamentos'}</h2>
           {tab === 'compras' || tab === 'vendas' ? (
-            <Pedidos key={tab} papel={tab === 'compras' ? 'comprador' : 'vendedor'} />
+            <Pedidos
+              key={tab}
+              papel={tab === 'compras' ? 'comprador' : 'vendedor'}
+              pedidosIniciais={tab === 'compras' ? pedidosComprador : pedidosVendedor}
+              onPedidosChange={tab === 'compras' ? onPedidosCompradorChange : onPedidosVendedorChange}
+            />
           ) : tab === 'anuncios' ? (
             <div className="mt-6 flex flex-col gap-3">
               {meusAnuncios.map((anuncio) => (

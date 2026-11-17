@@ -52,10 +52,10 @@ export function AuthForm({ entrar, cadastrar, onSucesso, motivo }: {
       } else if (modo === 'recuperar') {
         const resposta = await api<{ mensagem: string, tokenDesenvolvimento?: string }>('/auth/recuperar-senha', { method: 'POST', body: { email: campo('email') } })
         setEmail(campo('email'))
-        // Fora de produção a API devolve o token, já que o envio de e-mail é simulado.
+        // O envio de e-mail funciona em modo sandbox: a API devolve o código de recuperação.
         setToken(resposta.tokenDesenvolvimento ?? '')
         setModo('redefinir')
-        setInfo(resposta.tokenDesenvolvimento ? 'Ambiente de desenvolvimento: o código de recuperação já foi preenchido.' : resposta.mensagem)
+        setInfo(resposta.tokenDesenvolvimento ? 'Código de recuperação gerado e preenchido automaticamente. Escolha sua nova senha.' : resposta.mensagem)
       } else {
         await api('/auth/redefinir-senha', { method: 'POST', body: { token: campo('token'), novaSenha: String(data.get('novaSenha') ?? '') } })
         setModo('login')

@@ -2,7 +2,6 @@ import crypto from 'node:crypto'
 import bcrypt from 'bcryptjs'
 import { rateLimit } from 'express-rate-limit'
 import { z } from 'zod'
-import { config } from '../config.js'
 import { prisma } from '../db.js'
 import { gerarToken } from '../http/auth.js'
 import { HttpError } from '../http/erros.js'
@@ -75,7 +74,7 @@ rotas.post('/login', {
 
 rotas.post('/recuperar-senha', {
   resumo: 'Solicitar recuperação de senha (RF01)',
-  descricao: 'Sempre responde 200 para não revelar quais e-mails existem. O envio de e-mail é simulado: fora de produção o token volta na resposta (campo tokenDesenvolvimento).',
+  descricao: 'Sempre responde 200 para não revelar quais e-mails existem. O envio de e-mail é simulado (sandbox): o token volta na resposta (campo tokenDesenvolvimento).',
   antes: [limitarTentativas],
   body: z.object({ email }),
   handler: async ({ body }) => {
@@ -92,7 +91,7 @@ rotas.post('/recuperar-senha', {
       },
     })
     console.info(`[e-mail simulado] Recuperação de senha para ${usuario.email}: token ${token}`)
-    return config.producao ? resposta : { ...resposta, tokenDesenvolvimento: token }
+    return { ...resposta, tokenDesenvolvimento: token }
   },
 })
 

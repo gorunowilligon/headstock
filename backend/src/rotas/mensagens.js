@@ -7,8 +7,6 @@ import { serializarMensagem } from '../http/serializar.js'
 
 const rotas = criarRouter('/mensagens', 'Chat')
 
-const participante = { select: { idUsuario: true, nome: true } }
-
 rotas.post('/', {
   resumo: 'Enviar mensagem no chat (RF09)',
   auth: 'usuario',
@@ -20,11 +18,14 @@ rotas.post('/', {
   }),
   handler: async ({ usuario, body }) => {
     if (body.idDestinatario === usuario.idUsuario) throw new HttpError(400, 'Você não pode enviar mensagens para si mesmo')
-    const destinatario = await prisma.usuario.findUnique({ where: { idUsuario: body.idDestinatario } })
+    const [destinatario, anuncio] = await Promise.all([
+      prisma.usuario.findUnique({ where: { idUsuario: body.idDestinatario }, select: { idUsuario: true, banido: true } }),
+      body.idAnuncio
+        ? prisma.anuncio.findUnique({ where: { idAnuncio: body.idAnuncio }, select: { idAnuncio: true } })
+        : Promise.resolve(true),
+    ])
     if (!destinatario || destinatario.banido) throw naoEncontrado('Destinatário')
-    if (body.idAnuncio && !(await prisma.anuncio.findUnique({ where: { idAnuncio: body.idAnuncio } }))) {
-      throw naoEncontrado('Anúncio')
-    }
+    if (!anuncio) throw naoEncontrado('Anúncio')
 
     const mensagem = await prisma.mensagem.create({
       data: {
@@ -43,22 +44,41 @@ rotas.get('/conversas', {
   auth: 'usuario',
   handler: async ({ usuario }) => {
     const eu = usuario.idUsuario
-    const mensagens = await prisma.mensagem.findMany({
-      where: { OR: [{ idRemetente: eu }, { idDestinatario: eu }] },
-      include: { remetente: participante, destinatario: participante, anuncio: { select: { idAnuncio: true, titulo: true } } },
-      orderBy: { dataEnvio: 'desc' },
-      take: 500,
-    })
+    const linhas = await prisma.$queryRaw`
+      SELECT
+        m."idMensagem",
+        m."conteudo",
+        m."dataEnvio",
+        m."idRemetente",
+        m."idDestinatario",
+        m."idAnuncio",
+        u."idUsuario" AS "outroId",
+        u."nome" AS "outroNome",
+        a."titulo" AS "anuncioTitulo"
+      FROM (
+        SELECT DISTINCT ON (
+          CASE WHEN "idRemetente" = ${eu} THEN "idDestinatario" ELSE "idRemetente" END,
+          COALESCE("idAnuncio", 0)
+        )
+          "idMensagem", "conteudo", "dataEnvio", "idRemetente", "idDestinatario", "idAnuncio"
+        FROM "Mensagem"
+        WHERE "idRemetente" = ${eu} OR "idDestinatario" = ${eu}
+        ORDER BY
+          CASE WHEN "idRemetente" = ${eu} THEN "idDestinatario" ELSE "idRemetente" END,
+          COALESCE("idAnuncio", 0),
+          "dataEnvio" DESC,
+          "idMensagem" DESC
+      ) m
+      JOIN "Usuario" u ON u."idUsuario" = CASE WHEN m."idRemetente" = ${eu} THEN m."idDestinatario" ELSE m."idRemetente" END
+      LEFT JOIN "Anuncio" a ON a."idAnuncio" = m."idAnuncio"
+      ORDER BY m."dataEnvio" DESC, m."idMensagem" DESC
+    `
 
-    const conversas = new Map()
-    for (const m of mensagens) {
-      const outro = m.idRemetente === eu ? m.destinatario : m.remetente
-      const chave = `${outro.idUsuario}:${m.idAnuncio ?? ''}`
-      if (!conversas.has(chave)) {
-        conversas.set(chave, { com: outro, anuncio: m.anuncio, ultimaMensagem: serializarMensagem(m) })
-      }
-    }
-    return [...conversas.values()]
+    return linhas.map((l) => ({
+      com: { idUsuario: l.outroId, nome: l.outroNome },
+      anuncio: l.idAnuncio && l.anuncioTitulo ? { idAnuncio: l.idAnuncio, titulo: l.anuncioTitulo } : null,
+      ultimaMensagem: serializarMensagem(l),
+    }))
   },
 })
 

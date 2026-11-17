@@ -26,13 +26,13 @@ export function Header({ onNavigate, onSearch, logado, temNotificacaoChat = fals
 
   return (
     <header className="sticky top-0 z-20 border-b bg-white/95 backdrop-blur">
-      <div className="mx-auto flex h-20 max-w-[1440px] items-center gap-3 px-4 sm:gap-5 sm:px-5 lg:px-10">
+      <div className="mx-auto flex h-20 w-full items-center gap-3 px-4 sm:gap-5 sm:px-6 lg:px-10">
         <button onClick={() => onNavigate('home')} className="flex shrink-0 items-center gap-2" aria-label="Ir para início">
           <span className="grid size-9 place-items-center rounded-xl bg-red-600 text-white"><Guitar /></span>
           <span className="text-2xl font-extrabold tracking-tight text-red-600">headstock</span>
         </button>
         <form onSubmit={handleSearch} role="search" className="hidden flex-1 md:block">
-          <div className="mx-auto flex max-w-2xl items-center rounded-xl border bg-gray-50 px-4 py-2.5">
+          <div className="mx-auto flex max-w-3xl items-center rounded-xl border bg-gray-50 px-4 py-2.5">
             <Search className="mr-3 text-gray-400" />
             <input value={texto} onChange={(e) => atualizarBusca(e.target.value)} className="w-full bg-transparent text-sm outline-none" placeholder="O que você está procurando?" aria-label="Buscar anúncios" />
             {texto && (

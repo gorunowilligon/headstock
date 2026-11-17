@@ -106,7 +106,21 @@ export interface Anuncio {
  * Classe Anuncio do diagrama de classes. Os campos vêm da interface Anuncio acima
  * (o TypeScript junta interface e classe com o mesmo nome).
  */
+const cacheBusca = new Map<string, Anuncio[]>()
+
 export class Anuncio {
+  static chaveDeBusca(texto: string, filtros: Filtros): string {
+    return JSON.stringify({ q: texto.trim(), ...paraQuery(filtros) })
+  }
+
+  static lerCache(texto: string, filtros: Filtros): Anuncio[] | undefined {
+    return cacheBusca.get(Anuncio.chaveDeBusca(texto, filtros))
+  }
+
+  static invalidarCache() {
+    cacheBusca.clear()
+  }
+
   /**
    * anuncios = buscar(texto, filtros) : Anuncio[0..*] (RF05).
    * Devolve null quando os filtros são inválidos; senão, só anúncios ativos que atendem
@@ -115,7 +129,9 @@ export class Anuncio {
   static async buscar(texto: string, filtros: Filtros): Promise<Anuncio[] | null> {
     const validos = filtros.validar()
     if (!validos) return null
+    const chave = Anuncio.chaveDeBusca(texto, filtros)
     const resposta = await api<{ itens: Anuncio[] }>('/anuncios', { query: { q: texto, porPagina: 100, ...paraQuery(filtros) } })
+    cacheBusca.set(chave, resposta.itens)
     return resposta.itens
   }
 }

@@ -13,10 +13,10 @@ import { Favorites } from '@/components/favorites/favorites'
 import { AuthForm } from '@/components/auth/auth-form'
 import { useSessao } from '@/hooks/use-session'
 import { api, mensagemDeErro } from '@/lib/api'
-import { Filtros, filtrosVazios, type DadosFiltros } from '@/lib/filtros'
+import { categoriasDoFiltro, Filtros, filtrosVazios, type DadosFiltros } from '@/lib/filtros'
 import type { AlvoConversa } from '@/components/detail/detail'
 import { Anuncio } from '@/lib/models'
-import type { Conversa, EdicaoAnuncio, Instrumento, NovaDenuncia, NovoAnuncio, UsuarioSessao } from '@/lib/models'
+import type { Conversa, EdicaoAnuncio, Instrumento, NovaDenuncia, NovoAnuncio, Pedido, UsuarioSessao } from '@/lib/models'
 
 // RF06: estas telas exigem login (ou cadastro).
 const telasComLogin = ['sell', 'edit', 'chat', 'profile', 'favorites']
@@ -93,6 +93,8 @@ export default function Page() {
   const [catalogoMestre, setCatalogoMestre] = useState<Instrumento[]>([])
   const [meusAnuncios, setMeusAnuncios] = useState<Anuncio[]>([])
   const [favoritosAnuncios, setFavoritosAnuncios] = useState<Anuncio[]>([])
+  const [pedidosComprador, setPedidosComprador] = useState<Pedido[] | null>(null)
+  const [pedidosVendedor, setPedidosVendedor] = useState<Pedido[] | null>(null)
   const [anuncioAvulso, setAnuncioAvulso] = useState<Anuncio | null>(null)
   const [conversas, setConversas] = useState<Conversa[]>([])
   const [mensagensLidas, setMensagensLidas] = useState<Record<string, number>>({})
@@ -136,17 +138,30 @@ export default function Page() {
 
   /** buscar(texto, filtros): chama Anuncio.buscar e segue o fragmento alt do diagrama de sequência. */
   const buscar = useCallback(async (texto: string, dados: DadosFiltros) => {
+    const instanciaFiltros = new Filtros(dados)
+    if (!instanciaFiltros.validar()) {
+      notificar('Não foi possível carregar os anúncios.')
+      setCarregandoCatalogo(false)
+      return
+    }
+    const emCache = Anuncio.lerCache(texto, instanciaFiltros)
+    if (emCache) {
+      if (emCache.length === 0) exibirAviso('Nenhum anúncio encontrado.')
+      else exibirCards(emCache)
+      setCarregandoCatalogo(false)
+    }
+
     // O número é tirado antes de qualquer retorno, para que uma resposta antiga nunca sobrescreva a busca atual.
     const numero = ++ultimaBusca.current
     try {
-      const anuncios = await Anuncio.buscar(texto, new Filtros(dados))
+      const anuncios = await Anuncio.buscar(texto, instanciaFiltros)
       if (numero !== ultimaBusca.current) return // uma busca mais nova já foi disparada
       if (anuncios === null) notificar('Não foi possível carregar os anúncios.')
       else if (anuncios.length === 0) exibirAviso('Nenhum anúncio encontrado.')
       else exibirCards(anuncios)
     } catch (erro) {
       // Falha de conexão ou do servidor (fora do diagrama): mesma notificação, com o motivo.
-      if (numero === ultimaBusca.current) notificar(`Não foi possível carregar os anúncios. ${mensagemDeErro(erro)}`)
+      if (numero === ultimaBusca.current && !emCache) notificar(`Não foi possível carregar os anúncios. ${mensagemDeErro(erro)}`)
     } finally {
       if (numero === ultimaBusca.current) setCarregandoCatalogo(false)
     }
@@ -155,19 +170,43 @@ export default function Page() {
   const carregarCatalogo = useCallback(() => buscar(busca, filtros), [buscar, busca, filtros])
 
   const carregarMeusDados = useCallback(async () => {
-    const [meus, favs] = await Promise.all([api<Anuncio[]>('/anuncios/meus'), api<Anuncio[]>('/favoritos')])
+    const [meus, favs, compras, vendas] = await Promise.all([
+      api<Anuncio[]>('/anuncios/meus'),
+      api<Anuncio[]>('/favoritos'),
+      api<Pedido[]>('/pedidos', { query: { papel: 'comprador' } }),
+      api<Pedido[]>('/pedidos', { query: { papel: 'vendedor' } }),
+    ])
     setMeusAnuncios(meus)
     setFavoritosAnuncios(favs)
+    setPedidosComprador(compras)
+    setPedidosVendedor(vendas)
   }, [])
 
-  // Pequeno atraso para não consultar a API a cada tecla digitada em preço e localização.
+  const camposDigitados = `${busca}|${filtros.precoMin}|${filtros.precoMax}|${filtros.localizacao}`
+  const camposDigitadosAnteriores = useRef(camposDigitados)
+
+  // Sem atraso ao abrir o site, trocar de categoria, marcar filtros ou mudar a ordenação;
+  // pequeno atraso apenas enquanto o usuário digita busca, preço ou localização.
   useEffect(() => {
-    const timer = setTimeout(carregarCatalogo, 300)
+    const digitando = camposDigitados !== camposDigitadosAnteriores.current
+    camposDigitadosAnteriores.current = camposDigitados
+    if (!digitando) {
+      carregarCatalogo()
+      return
+    }
+    const timer = setTimeout(carregarCatalogo, 180)
     return () => clearTimeout(timer)
-  }, [carregarCatalogo])
+  }, [carregarCatalogo, camposDigitados])
 
   useEffect(() => {
     api<Instrumento[]>('/instrumentos').then(setCatalogoMestre).catch(() => {})
+    // Pré-carrega as demais seções em segundo plano para que a troca de abas seja imediata.
+    const timer = setTimeout(() => {
+      for (const categoria of categoriasDoFiltro.slice(1)) {
+        Anuncio.buscar('', new Filtros({ ...filtrosVazios, categorias: [categoria] })).catch(() => {})
+      }
+    }, 400)
+    return () => clearTimeout(timer)
   }, [])
 
   const idUsuario = usuario?.idUsuario
@@ -186,6 +225,8 @@ export default function Page() {
     if (!idUsuario) {
       setMeusAnuncios([])
       setFavoritosAnuncios([])
+      setPedidosComprador(null)
+      setPedidosVendedor(null)
       setConversas([])
       setMensagensLidas({})
       return
@@ -252,8 +293,11 @@ export default function Page() {
   }
 
   // Depois do checkout: o anúncio sai do catálogo e o pedido aparece em "Minhas compras".
-  const aposComprar = () => {
-    recarregarTudo().catch(() => {}) // a compra já foi feita; a lista se atualiza na próxima visita
+  const aposComprar = (novoPedido: Pedido) => {
+    Anuncio.invalidarCache()
+    setPedidosComprador((atuais) => (atuais ? [novoPedido, ...atuais.filter((p) => p.idPedido !== novoPedido.idPedido)] : [novoPedido]))
+    setCatalogo((atuais) => atuais.filter((a) => a.idAnuncio !== novoPedido.idAnuncio))
+    recarregarTudo().catch(() => {})
     setAlvoChat(null)
     irParaPerfil('compras')
     avisar('sucesso', 'Compra realizada. Acompanhe o pedido em Minhas compras.')
@@ -308,26 +352,38 @@ export default function Page() {
   const togglePause = async (id: number) => {
     const anuncio = meusAnuncios.find((a) => a.idAnuncio === id)
     if (!anuncio) return
+    const novoStatus = anuncio.status === 'ativo' ? 'pausado' : 'ativo'
+    Anuncio.invalidarCache()
+    setMeusAnuncios((atuais) => atuais.map((a) => (a.idAnuncio === id ? { ...a, status: novoStatus } : a)))
+    if (novoStatus === 'pausado') setCatalogo((atuais) => atuais.filter((a) => a.idAnuncio !== id))
     try {
-      await api(`/anuncios/${id}/${anuncio.status === 'ativo' ? 'pausar' : 'reativar'}`, { method: 'POST' })
-      await recarregarTudo()
+      const atualizado = await api<Anuncio>(`/anuncios/${id}/${anuncio.status === 'ativo' ? 'pausar' : 'reativar'}`, { method: 'POST' })
+      setMeusAnuncios((atuais) => atuais.map((a) => (a.idAnuncio === id ? atualizado : a)))
+      carregarCatalogo().catch(() => {})
     } catch (erro) {
+      setMeusAnuncios((atuais) => atuais.map((a) => (a.idAnuncio === id ? anuncio : a)))
       avisarErro(erro, anuncio.status === 'ativo' ? 'Não foi possível pausar o anúncio.' : 'Não foi possível reativar o anúncio.')
     }
   }
 
   // Erros destas três funções sobem para o formulário, que os exibe junto aos campos.
   const publishListing = async (novo: NovoAnuncio) => {
-    await api('/anuncios', { method: 'POST', body: novo })
-    await recarregarTudo()
+    const criado = await api<Anuncio>('/anuncios', { method: 'POST', body: novo })
+    Anuncio.invalidarCache()
+    setMeusAnuncios((atuais) => [criado, ...atuais])
+    carregarCatalogo().catch(() => {})
     setCurrentView('home')
     avisar('sucesso', 'Anúncio publicado.')
   }
 
   const updateListing = async (id: number, dados: EdicaoAnuncio) => {
     const atualizado = await api<Anuncio>(`/anuncios/${id}`, { method: 'PATCH', body: dados })
+    Anuncio.invalidarCache()
     if (anuncioAvulso?.idAnuncio === id) setAnuncioAvulso(atualizado)
-    await recarregarTudo()
+    setMeusAnuncios((atuais) => atuais.map((a) => (a.idAnuncio === id ? atualizado : a)))
+    setCatalogo((atuais) => atuais.map((a) => (a.idAnuncio === id ? atualizado : a)))
+    setFavoritosAnuncios((atuais) => atuais.map((a) => (a.idAnuncio === id ? atualizado : a)))
+    carregarCatalogo().catch(() => {})
     irParaPerfil('anuncios')
     avisar('sucesso', 'Anúncio atualizado.')
   }
@@ -342,16 +398,22 @@ export default function Page() {
   }
 
   const deleteListing = async (id: number) => {
+    const anteriores = meusAnuncios
+    Anuncio.invalidarCache()
+    setMeusAnuncios((prev) => prev.filter((anuncio) => anuncio.idAnuncio !== id))
+    setCatalogo((prev) => prev.filter((anuncio) => anuncio.idAnuncio !== id))
+    setFavoritosAnuncios((prev) => prev.filter((anuncio) => anuncio.idAnuncio !== id))
     try {
       await api(`/anuncios/${id}`, { method: 'DELETE' })
-      setMeusAnuncios((prev) => prev.filter((anuncio) => anuncio.idAnuncio !== id))
-      await recarregarTudo()
     } catch (erro) {
+      setMeusAnuncios(anteriores)
+      carregarCatalogo().catch(() => {})
       avisarErro(erro, 'Não foi possível excluir o anúncio.')
     }
   }
 
   const salvarPerfil = async (campos: Partial<Pick<UsuarioSessao, 'nome' | 'enderecoCompleto' | 'chavePix'>>) => {
+    if (usuario) sessao.atualizar({ ...usuario, ...campos })
     sessao.atualizar(await api<UsuarioSessao>('/usuarios/me', { method: 'PATCH', body: campos }))
   }
 
@@ -372,8 +434,8 @@ export default function Page() {
       if (!anuncioSelecionado) return <main className="mx-auto max-w-5xl px-5 py-8 text-sm text-gray-500 lg:px-10">Carregando anúncio...</main>
       return <EditListing key={anuncioSelecionado.idAnuncio} anuncio={anuncioSelecionado} onSave={updateListing} onCancel={() => irParaPerfil('anuncios')} />
     }
-    if (currentView === 'chat') return <Chat key={alvoChat ? `${alvoChat.com.idUsuario}:${alvoChat.anuncio?.idAnuncio}` : 'chat'} idUsuario={usuario.idUsuario} alvoInicial={alvoChat} onComprado={aposComprar} lidas={mensagensLidas} onMarcarLida={marcarMensagemLida} onConversasChange={setConversas} />
-    if (currentView === 'profile') return <Profile key={abaPerfil} abaInicial={abaPerfil} usuario={usuario} meusAnuncios={meusAnuncios.filter((anuncio) => anuncio.status !== 'removido')} onSalvarPerfil={salvarPerfil} onSair={sair} onEditListing={editListing} onTogglePause={togglePause} onDeleteListing={deleteListing} />
+    if (currentView === 'chat') return <Chat key={alvoChat ? `${alvoChat.com.idUsuario}:${alvoChat.anuncio?.idAnuncio}` : 'chat'} idUsuario={usuario.idUsuario} alvoInicial={alvoChat} conversasIniciais={conversas} onComprado={aposComprar} lidas={mensagensLidas} onMarcarLida={marcarMensagemLida} onConversasChange={setConversas} />
+    if (currentView === 'profile') return <Profile key={abaPerfil} abaInicial={abaPerfil} usuario={usuario} meusAnuncios={meusAnuncios.filter((anuncio) => anuncio.status !== 'removido')} pedidosComprador={pedidosComprador} pedidosVendedor={pedidosVendedor} onPedidosCompradorChange={setPedidosComprador} onPedidosVendedorChange={setPedidosVendedor} onSalvarPerfil={salvarPerfil} onSair={sair} onEditListing={editListing} onTogglePause={togglePause} onDeleteListing={deleteListing} />
     if (currentView === 'favorites') return <Favorites catalogo={favoritosAnuncios} onOpen={openDetail} onBrowse={() => setCurrentView('home')} favoritos={favoritos} onToggleFavorite={toggleFavorite} />
     return renderHome()
   }

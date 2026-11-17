@@ -7,7 +7,7 @@ export function Favorites({ catalogo, onOpen, onBrowse, favoritos, onToggleFavor
   const favoriteProducts = catalogo.filter((product) => favoritos.includes(product.idAnuncio))
 
   return (
-    <main className="mx-auto max-w-[1440px] px-5 py-8 lg:px-10">
+    <main className="mx-auto w-full px-5 py-8 lg:px-10">
       <div className="mb-8">
         <p className="mb-2 text-sm font-semibold text-red-600">Sua lista</p>
         <h1 className="text-3xl font-extrabold tracking-tight sm:text-4xl">Favoritos</h1>
@@ -23,7 +23,7 @@ export function Favorites({ catalogo, onOpen, onBrowse, favoritos, onToggleFavor
           </div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-x-5 gap-y-9 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,260px),1fr))] gap-x-5 gap-y-9">
           {favoriteProducts.map((product) => (
             <ProductCard
               key={product.idAnuncio}

@@ -90,7 +90,7 @@ export function Detail({ anuncio, idUsuarioLogado, onBack, onReport, onRequireLo
   }
 
   return (
-    <main className="mx-auto max-w-[1240px] px-5 py-8 lg:px-10">
+    <main className="mx-auto w-full max-w-[96rem] px-5 py-8 lg:px-10">
       <button onClick={onBack} className="mb-7 flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-red-600"><ArrowLeft /> Voltar para anúncios</button>
       <div className="grid gap-10 lg:grid-cols-[1.4fr_0.8fr]">
         <section>
