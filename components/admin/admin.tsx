@@ -129,7 +129,7 @@ export function Admin({
           : d
       )))
       onAnuncioModerado()
-      notificar(`Anúncio #${idAnuncio} removido da vitrine (RF14).${idDenuncia ? ` Considere marcar a denúncia #DEN-${String(idDenuncia).padStart(4, '0')} como RESOLVIDA.` : ''}`)
+      notificar(`Anúncio #${idAnuncio} removido da vitrine.${idDenuncia ? ` Considere marcar a denúncia #DEN-${String(idDenuncia).padStart(4, '0')} como RESOLVIDA.` : ''}`)
     })
 
   const alternarBanimento = (idUsuarioAlvo: number, nomeAlvo: string, banir: boolean) =>
@@ -149,7 +149,7 @@ export function Admin({
           : d.mensagem,
       })))
       onAnuncioModerado()
-      notificar(banir ? `Usuário "${nomeAlvo}" (#${idUsuarioAlvo}) banido e anúncios ativos pausados (RF14).` : `Banimento do usuário "${nomeAlvo}" (#${idUsuarioAlvo}) revogado.`)
+      notificar(banir ? `Usuário "${nomeAlvo}" (#${idUsuarioAlvo}) banido e anúncios ativos pausados.` : `Banimento do usuário "${nomeAlvo}" (#${idUsuarioAlvo}) revogado.`)
     })
 
   // ---- Ações de Disputas (RF15) ---------------------------------------------
@@ -278,21 +278,21 @@ export function Admin({
         {/* Indicadores rápidos em estilo grade administrativa */}
         <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
           <div className="border-2 border-slate-400 bg-white p-3.5 shadow-[2px_2px_0px_#94a3b8]">
-            <p className="font-mono text-[11px] font-bold uppercase tracking-wider text-slate-500">01 // Denúncias pendentes (RF12/RF14)</p>
+            <p className="font-mono text-[11px] font-bold uppercase tracking-wider text-slate-500">01 // Denúncias pendentes</p>
             <div className="mt-1 flex items-baseline justify-between">
               <span className="font-mono text-2xl font-extrabold text-slate-900">{denunciasPendentes}</span>
               <span className="font-mono text-xs text-slate-500">Total registradas: {denuncias.length}</span>
             </div>
           </div>
           <div className="border-2 border-slate-400 bg-white p-3.5 shadow-[2px_2px_0px_#94a3b8]">
-            <p className="font-mono text-[11px] font-bold uppercase tracking-wider text-slate-500">02 // Disputas aguardando decisão (RF15)</p>
+            <p className="font-mono text-[11px] font-bold uppercase tracking-wider text-slate-500">02 // Disputas aguardando decisão</p>
             <div className="mt-1 flex items-baseline justify-between">
               <span className="font-mono text-2xl font-extrabold text-slate-900">{disputas.length}</span>
               <span className="font-mono text-xs text-slate-500">Pagamentos retidos em custódia</span>
             </div>
           </div>
           <div className="border-2 border-slate-400 bg-white p-3.5 shadow-[2px_2px_0px_#94a3b8]">
-            <p className="font-mono text-[11px] font-bold uppercase tracking-wider text-slate-500">03 // Catálogo mestre (RF13)</p>
+            <p className="font-mono text-[11px] font-bold uppercase tracking-wider text-slate-500">03 // Catálogo mestre</p>
             <div className="mt-1 flex items-baseline justify-between">
               <span className="font-mono text-2xl font-extrabold text-slate-900">{catalogoMestre.length}</span>
               <span className="font-mono text-xs text-slate-500">Modelos oficiais cadastrados</span>
@@ -341,7 +341,7 @@ export function Admin({
             <section>
               <div className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-slate-300 pb-3">
                 <div>
-                  <h2 className="text-base font-extrabold uppercase tracking-wide">Módulo de Denúncias e Moderação (RF12 / RF14)</h2>
+                  <h2 className="text-base font-extrabold uppercase tracking-wide">Módulo de Denúncias e Moderação</h2>
                   <p className="text-xs text-slate-600">Analise denúncias, remova anúncios irregulares e aplique banimento a usuários infratores.</p>
                 </div>
                 <div className="flex flex-wrap gap-1">
@@ -496,7 +496,7 @@ export function Admin({
           {aba === 'disputas' && (
             <section>
               <div className="mb-4 border-b border-slate-300 pb-3">
-                <h2 className="text-base font-extrabold uppercase tracking-wide">Módulo de Mediação e Disputas (RF15)</h2>
+                <h2 className="text-base font-extrabold uppercase tracking-wide">Módulo de Mediação e Disputas</h2>
                 <p className="text-xs text-slate-600">
                   Pedidos com pagamento retido por abertura de disputa. Decida entre manter a venda, autorizar devolução, estornar ou cancelar.
                 </p>
@@ -597,7 +597,7 @@ export function Admin({
           {aba === 'catalogo' && (
             <section>
               <div className="mb-4 border-b border-slate-300 pb-3">
-                <h2 className="text-base font-extrabold uppercase tracking-wide">Módulo do Catálogo Mestre de Instrumentos (RF13)</h2>
+                <h2 className="text-base font-extrabold uppercase tracking-wide">Módulo do Catálogo Mestre de Instrumentos</h2>
                 <p className="text-xs text-slate-600">
                   Cadastre, edite ou remova modelos padronizados utilizados para preenchimento automático de anúncios.
                 </p>
