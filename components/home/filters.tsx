@@ -13,8 +13,8 @@ export function Filters({ filtros, onChange, instrumentos, aberto }: { filtros: 
   const daSecao = filtros.categorias.length ? instrumentos.filter((i) => filtros.categorias.includes(i.categoria)) : instrumentos
   const marcasExtraidas = unicos(daSecao.map((i) => i.marca))
   const captacoesExtraidas = unicos(daSecao.map((i) => i.tipoCaptacao))
-  const marcas = marcasExtraidas.length > 0 ? marcasExtraidas : marcasPadrao
-  const tiposCaptacao = captacoesExtraidas.length > 0 ? captacoesExtraidas : captacoesPadrao
+  const marcas = instrumentos.length > 0 ? marcasExtraidas : marcasPadrao
+  const tiposCaptacao = instrumentos.length > 0 ? captacoesExtraidas : captacoesPadrao
 
   const alternar = (lista: ListaFiltro, valor: string) => {
     const atual = filtros[lista]

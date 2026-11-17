@@ -25,10 +25,10 @@ export function Home({ catalogo, carregando, erro, aviso, onTentarNovamente, bus
 }) {
   const [filtrosAbertos, setFiltrosAbertos] = useState(false)
   const ativos = contarFiltros(filtros)
-  const secao = filtros.categorias[0] ?? ''
+  const secao = filtros.categorias[0] ?? categoriasDoFiltro[0]
 
   // Trocar de seção descarta marca e captação, que podem não existir na nova seção.
-  const abrirSecao = (categoria: string) => onFiltrosChange({ ...filtros, categorias: categoria ? [categoria] : [], marcas: [], tiposCaptacao: [] })
+  const abrirSecao = (categoria: string) => onFiltrosChange({ ...filtros, categorias: [categoria], marcas: [], tiposCaptacao: [] })
 
   return (
     <main className="mx-auto max-w-[1440px] px-5 py-8 lg:px-10">
@@ -37,7 +37,7 @@ export function Home({ catalogo, carregando, erro, aviso, onTentarNovamente, bus
           <p className="mb-2 text-sm font-semibold text-red-600">Mercado de instrumentos</p>
           <h1 className="text-3xl font-extrabold tracking-tight sm:text-4xl">Encontre seu próximo som</h1>
           <p className="mt-2 text-gray-500">
-            {carregando ? 'Carregando anúncios...' : busca || ativos > 0 || secao ? `${catalogo.length} ${catalogo.length === 1 ? 'resultado' : 'resultados'}${busca ? ` para "${busca}"` : ''}.` : `${catalogo.length} ${catalogo.length === 1 ? 'instrumento anunciado' : 'instrumentos anunciados'} por músicos como você.`}
+            {carregando ? 'Carregando anúncios...' : busca || ativos > 0 ? `${catalogo.length} ${catalogo.length === 1 ? 'resultado' : 'resultados'}${busca ? ` para "${busca}"` : ''}.` : `${catalogo.length} ${catalogo.length === 1 ? 'instrumento anunciado' : 'instrumentos anunciados'} por músicos como você.`}
           </p>
         </div>
         <Button variant="outline" onClick={() => setFiltrosAbertos((aberto) => !aberto)} aria-expanded={filtrosAbertos} className="w-fit gap-2 lg:hidden"><SlidersHorizontal /> Filtros {ativos > 0 && <Badge variant="secondary">{ativos}</Badge>}</Button>
@@ -46,14 +46,14 @@ export function Home({ catalogo, carregando, erro, aviso, onTentarNovamente, bus
         <Filters filtros={filtros} onChange={onFiltrosChange} instrumentos={instrumentos} aberto={filtrosAbertos} />
         <section className="min-w-0 flex-1">
           <div role="tablist" aria-label="Seções de instrumentos" className="-mx-1 mb-5 flex gap-1 overflow-x-auto border-b px-1">
-            {[{ valor: '', rotulo: 'Todos' }, ...categoriasDoFiltro.map((c) => ({ valor: c, rotulo: c }))].map(({ valor, rotulo }) => (
+            {categoriasDoFiltro.map((categoria) => (
               <button
-                key={rotulo}
+                key={categoria}
                 role="tab"
-                aria-selected={secao === valor}
-                onClick={() => abrirSecao(valor)}
-                className={`-mb-px shrink-0 border-b-2 px-4 py-3 text-sm font-semibold transition-colors ${secao === valor ? 'border-red-600 text-red-600' : 'border-transparent text-gray-500 hover:text-gray-900'}`}
-              >{rotulo}</button>
+                aria-selected={secao === categoria}
+                onClick={() => abrirSecao(categoria)}
+                className={`-mb-px shrink-0 border-b-2 px-4 py-3 text-sm font-semibold transition-colors ${secao === categoria ? 'border-red-600 text-red-600' : 'border-transparent text-gray-500 hover:text-gray-900'}`}
+              >{categoria}</button>
             ))}
           </div>
           <div className="mb-5 flex items-center justify-between border-b pb-4 text-sm">

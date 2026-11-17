@@ -12,8 +12,12 @@ export interface DadosFiltros {
   ordenar: Ordenacao
 }
 
+// Categorias do escopo inicial (seção 2.4 dos requisitos) e condições aceitas pelo formulário de venda.
+export const categoriasDoFiltro = ['Guitarras', 'Baixos', 'Violões', 'Amplificadores', 'Pedais/Efeitos', 'Acessórios']
+export const condicoesDoFiltro = ['Novo', 'Seminovo', 'Usado']
+
 export const filtrosVazios: DadosFiltros = {
-  categorias: [],
+  categorias: [categoriasDoFiltro[0]],
   marcas: [],
   condicoes: [],
   tiposCaptacao: [],
@@ -28,10 +32,6 @@ export const opcoesOrdenacao: { valor: Ordenacao, rotulo: string }[] = [
   { valor: 'menor_preco', rotulo: 'Menor preço' },
   { valor: 'maior_preco', rotulo: 'Maior preço' },
 ]
-
-// Categorias do escopo inicial (seção 2.4 dos requisitos) e condições aceitas pelo formulário de venda.
-export const categoriasDoFiltro = ['Guitarras', 'Baixos', 'Violões', 'Amplificadores', 'Pedais/Efeitos', 'Acessórios']
-export const condicoesDoFiltro = ['Novo', 'Seminovo', 'Usado']
 
 /** Quantidade de filtros ativos. Ordenação e seção (categoria) não contam: a seção é uma aba, não um filtro. */
 export function contarFiltros(f: DadosFiltros) {

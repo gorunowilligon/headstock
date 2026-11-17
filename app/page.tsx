@@ -22,6 +22,40 @@ import type { Conversa, EdicaoAnuncio, Instrumento, NovaDenuncia, NovoAnuncio, U
 const telasComLogin = ['sell', 'edit', 'chat', 'profile', 'favorites']
 const INTERVALO_CONVERSAS = 10000
 
+const caminhoParaTela: Record<string, string> = {
+  '/': 'home',
+  '/vender': 'sell',
+  '/chat': 'chat',
+  '/perfil': 'profile',
+  '/favoritos': 'favorites',
+  '/entrar': 'login',
+}
+
+const telaParaCaminho: Record<string, string> = {
+  home: '/',
+  sell: '/vender',
+  chat: '/chat',
+  profile: '/perfil',
+  favorites: '/favoritos',
+  login: '/entrar',
+}
+
+function lerRotaDaUrl(pathname: string): { view: string, idAnuncio: number | null } {
+  const limpo = pathname.replace(/\/+$/, '') || '/'
+  if (caminhoParaTela[limpo]) return { view: caminhoParaTela[limpo], idAnuncio: null }
+  const detalhe = limpo.match(/^\/anuncio\/(\d+)$/)
+  if (detalhe) return { view: 'detail', idAnuncio: Number(detalhe[1]) }
+  const edicao = limpo.match(/^\/editar\/(\d+)$/)
+  if (edicao) return { view: 'edit', idAnuncio: Number(edicao[1]) }
+  return { view: 'home', idAnuncio: null }
+}
+
+function caminhoDaTela(view: string, idAnuncio: number | null): string {
+  if (view === 'detail' && idAnuncio) return `/anuncio/${idAnuncio}`
+  if (view === 'edit' && idAnuncio) return `/editar/${idAnuncio}`
+  return telaParaCaminho[view] ?? '/'
+}
+
 const chaveLidas = (idUsuario: number) => `headstock:lidas:${idUsuario}`
 
 function lerMensagensLidas(idUsuario: number): Record<string, number> {
@@ -59,11 +93,13 @@ export default function Page() {
   const [catalogoMestre, setCatalogoMestre] = useState<Instrumento[]>([])
   const [meusAnuncios, setMeusAnuncios] = useState<Anuncio[]>([])
   const [favoritosAnuncios, setFavoritosAnuncios] = useState<Anuncio[]>([])
+  const [anuncioAvulso, setAnuncioAvulso] = useState<Anuncio | null>(null)
   const [conversas, setConversas] = useState<Conversa[]>([])
   const [mensagensLidas, setMensagensLidas] = useState<Record<string, number>>({})
+  const rotaPronta = useRef(false)
 
   const favoritos = favoritosAnuncios.map((anuncio) => anuncio.idAnuncio)
-  const anuncioSelecionado = [...catalogo, ...meusAnuncios, ...favoritosAnuncios].find((anuncio) => anuncio.idAnuncio === anuncioSelecionadoId)
+  const anuncioSelecionado = [...catalogo, ...meusAnuncios, ...favoritosAnuncios, ...(anuncioAvulso ? [anuncioAvulso] : [])].find((anuncio) => anuncio.idAnuncio === anuncioSelecionadoId)
   const temNotificacaoChat = Boolean(usuario && conversas.some((c) => conversaNaoLida(c, usuario.idUsuario, mensagensLidas)))
 
   const avisar = (tipo: Aviso['tipo'], texto: string) => setAviso({ tipo, texto })
@@ -166,6 +202,33 @@ export default function Page() {
 
   // ---- Navegação e login ----------------------------------------------------
 
+  useEffect(() => {
+    const sincronizarDaUrl = () => {
+      const { view, idAnuncio } = lerRotaDaUrl(window.location.pathname)
+      setCurrentView(view)
+      if (idAnuncio !== null) setAnuncioSelecionadoId(idAnuncio)
+    }
+    sincronizarDaUrl()
+    window.addEventListener('popstate', sincronizarDaUrl)
+    return () => window.removeEventListener('popstate', sincronizarDaUrl)
+  }, [])
+
+  useEffect(() => {
+    if (!rotaPronta.current) {
+      rotaPronta.current = true
+      return
+    }
+    const destino = caminhoDaTela(currentView, anuncioSelecionadoId)
+    if (window.location.pathname !== destino) window.history.pushState(null, '', destino)
+  }, [currentView, anuncioSelecionadoId])
+
+  useEffect(() => {
+    if (!anuncioSelecionadoId || anuncioSelecionado) return
+    api<Anuncio>(`/anuncios/${anuncioSelecionadoId}`)
+      .then(setAnuncioAvulso)
+      .catch(() => setCurrentView('home'))
+  }, [anuncioSelecionadoId, anuncioSelecionado])
+
   const pedirLogin = (destino: string) => {
     setDestinoLogin(destino)
     setCurrentView('login')
@@ -262,7 +325,8 @@ export default function Page() {
   }
 
   const updateListing = async (id: number, dados: EdicaoAnuncio) => {
-    await api(`/anuncios/${id}`, { method: 'PATCH', body: dados })
+    const atualizado = await api<Anuncio>(`/anuncios/${id}`, { method: 'PATCH', body: dados })
+    if (anuncioAvulso?.idAnuncio === id) setAnuncioAvulso(atualizado)
     await recarregarTudo()
     irParaPerfil('anuncios')
     avisar('sucesso', 'Anúncio atualizado.')
@@ -295,13 +359,19 @@ export default function Page() {
 
   const renderView = () => {
     if (currentView === 'login') return <AuthForm entrar={sessao.entrar} cadastrar={sessao.cadastrar} onSucesso={() => setCurrentView(destinoLogin === 'login' ? 'home' : destinoLogin)} motivo={destinoLogin !== 'home' ? 'Entre ou crie uma conta para continuar.' : undefined} />
-    if (currentView === 'detail' && anuncioSelecionado) return <Detail key={anuncioSelecionado.idAnuncio} anuncio={anuncioSelecionado} idUsuarioLogado={usuario?.idUsuario ?? null} onBack={() => setCurrentView(previousView)} onReport={submitReport} onRequireLogin={() => pedirLogin('detail')} onComprado={aposComprar} onConversar={abrirConversa} />
+    if (currentView === 'detail') {
+      if (!anuncioSelecionado) return <main className="mx-auto max-w-[1240px] px-5 py-8 text-sm text-gray-500 lg:px-10">Carregando anúncio...</main>
+      return <Detail key={anuncioSelecionado.idAnuncio} anuncio={anuncioSelecionado} idUsuarioLogado={usuario?.idUsuario ?? null} onBack={() => setCurrentView(previousView)} onReport={submitReport} onRequireLogin={() => pedirLogin('detail')} onComprado={aposComprar} onConversar={abrirConversa} />
+    }
     if (!usuario) {
-      if (currentView === 'home' || currentView === 'detail') return renderHome()
+      if (currentView === 'home') return renderHome()
       return null // aguardando o redirecionamento para o login
     }
     if (currentView === 'sell') return <Sell catalogoMestre={catalogoMestre} localizacaoPadrao={usuario.enderecoCompleto} onPublish={publishListing} />
-    if (currentView === 'edit' && anuncioSelecionado) return <EditListing key={anuncioSelecionado.idAnuncio} anuncio={anuncioSelecionado} onSave={updateListing} onCancel={() => irParaPerfil('anuncios')} />
+    if (currentView === 'edit') {
+      if (!anuncioSelecionado) return <main className="mx-auto max-w-5xl px-5 py-8 text-sm text-gray-500 lg:px-10">Carregando anúncio...</main>
+      return <EditListing key={anuncioSelecionado.idAnuncio} anuncio={anuncioSelecionado} onSave={updateListing} onCancel={() => irParaPerfil('anuncios')} />
+    }
     if (currentView === 'chat') return <Chat key={alvoChat ? `${alvoChat.com.idUsuario}:${alvoChat.anuncio?.idAnuncio}` : 'chat'} idUsuario={usuario.idUsuario} alvoInicial={alvoChat} onComprado={aposComprar} lidas={mensagensLidas} onMarcarLida={marcarMensagemLida} onConversasChange={setConversas} />
     if (currentView === 'profile') return <Profile key={abaPerfil} abaInicial={abaPerfil} usuario={usuario} meusAnuncios={meusAnuncios.filter((anuncio) => anuncio.status !== 'removido')} onSalvarPerfil={salvarPerfil} onSair={sair} onEditListing={editListing} onTogglePause={togglePause} onDeleteListing={deleteListing} />
     if (currentView === 'favorites') return <Favorites catalogo={favoritosAnuncios} onOpen={openDetail} onBrowse={() => setCurrentView('home')} favoritos={favoritos} onToggleFavorite={toggleFavorite} />
