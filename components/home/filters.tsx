@@ -1,12 +1,12 @@
 import { Filter } from '@/components/home/filter'
-import { categoriasDoFiltro, condicoesDoFiltro, contarFiltros, limparFiltros, type DadosFiltros } from '@/lib/filtros'
+import { condicoesDoFiltro, contarFiltros, limparFiltros, type DadosFiltros } from '@/lib/filtros'
 import type { Instrumento } from '@/lib/models'
 
 const unicos = (valores: string[]) => [...new Set(valores.filter(Boolean))].sort((a, b) => a.localeCompare(b, 'pt-BR'))
 const marcasPadrao = ['Boss', 'Fender', 'Gibson', 'Ibanez', 'Martin', 'Marshall', 'Tagima', 'Yamaha']
 const captacoesPadrao = ['Humbucker', 'Single Coil', 'HSS', 'HSH', 'P90', 'Piezo', 'Ativa']
 
-type ListaFiltro = 'categorias' | 'marcas' | 'condicoes' | 'tiposCaptacao'
+type ListaFiltro = 'marcas' | 'condicoes' | 'tiposCaptacao'
 
 export function Filters({ filtros, onChange, instrumentos, aberto }: { filtros: DadosFiltros, onChange: (filtros: DadosFiltros) => void, instrumentos: Instrumento[], aberto: boolean }) {
   // Marcas e captações oferecidas são as da seção aberta (com fallback padrão caso o catálogo mestre ainda esteja carregando).
@@ -29,12 +29,11 @@ export function Filters({ filtros, onChange, instrumentos, aberto }: { filtros: 
 
   return (
     <aside className={`${aberto ? 'block' : 'hidden'} w-full shrink-0 lg:block lg:w-64`}>
-      <div className="sticky top-28 flex flex-col gap-6">
+      <div className="sticky top-28 flex flex-col gap-6 lg:max-h-[calc(100vh-8rem)] lg:overflow-y-auto lg:overscroll-contain lg:pr-2">
         <div className="flex items-center justify-between">
           <h2 className="font-bold">Filtros</h2>
-          <button onClick={() => onChange(limparFiltros(filtros))} disabled={contarFiltros(filtros) === 0 && filtros.categorias.length === 0} className="text-xs font-semibold text-red-600 disabled:text-gray-300">Limpar tudo</button>
+          <button onClick={() => onChange(limparFiltros(filtros))} disabled={contarFiltros(filtros) === 0} className="text-xs font-semibold text-red-600 disabled:text-gray-300">Limpar tudo</button>
         </div>
-        <Filter title="Categorias">{opcoes('categorias', categoriasDoFiltro)}</Filter>
         {marcas.length > 0 && <Filter title="Marca">{opcoes('marcas', marcas)}</Filter>}
         {tiposCaptacao.length > 0 && <Filter title="Tipo de captação">{opcoes('tiposCaptacao', tiposCaptacao)}</Filter>}
         <Filter title="Condição">{opcoes('condicoes', condicoesDoFiltro)}</Filter>
